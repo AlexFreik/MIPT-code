@@ -1,0 +1,180 @@
+/*
+ C. Районы, кварталы, жилые массивы
+ Ограничение времени    1 секунда
+ Ограничение памяти    256Mb
+ Ввод    стандартный ввод или input.txt
+ Вывод    стандартный вывод или output.txt
+ Фрэнку опять прилетел новый заказ. Однако в этот
+ раз город играет по очень странным правилам: все дороги
+ в городе односторонние и связывают только офисы нанимателей
+ перевозчика. Множество офисов, между любыми двумя из которых
+ существует путь, образуют квартал, если нельзя добавить никакие
+ другие, чтобы условие выполнялось. Фрэнку интересно, каково
+ минимальное количество односторонних дорог нужно ещё построить,
+ чтобы весь город стал квраталом.
+
+ Формат ввода
+ Первая строка содержит пару целых чисел n и m
+ (1 ≤ n ≤ 105, 0 ≤ m ≤ 105) — количество вершин
+ и рёбер заданного ориентированного графа.
+
+ Следующие m строк содержат описания рёбер, по одному
+ в строке. Каждая из строк содержит по два целых числа
+ a и b (1 ≤ a, b ≤ n) — начало и конец ребра.
+
+ Формат вывода
+ Выведите одно число — количество дорог, которые нужно
+ добавить, чтобы весь город стал одним кварталом.
+
+ Пример 1
+ Ввод    Вывод
+ 2 1
+ 1 2
+ 1
+ Пример 2
+ Ввод    Вывод
+ 4 3
+ 1 2
+ 3 2
+ 2 4
+ 2
+ Пример 3
+ Ввод    Вывод
+ 5 4
+ 1 2
+ 3 2
+ 2 4
+ 2 5
+ 2
+ Примечания
+ Нумерация ведётся с 1. Петли допустимы.
+ */
+#include<vector>
+#include<iostream>
+#include<cassert>
+#include<set>
+#include<stack>
+#include <utility>
+#include <algorithm>
+using namespace std;
+
+class Graph {
+using VP = vector<pair<int, int>>;
+using VI = vector<int>;
+using VUI = vector<unsigned int>;
+    vector<set<int>> adj;
+    vector<set<int>> invert_adj;
+    vector<int> num_of_vret_SCC;
+    int SCC_cur_numb;
+    vector<int> SCC;  // 0 if SCC is source; 1 if sink; 2 - both
+    VI colors;  // 0 - white, 1 - grey, 2 - black
+    void dfs(int s) {  // s is white adj
+        assert(colors[s] == 0);
+        colors[s] = 1;
+        for (auto u : adj[s])
+            if (colors[u] == 0) dfs(u);
+        colors[s] = 2;
+        order.push(s);
+    }
+    void dfs_2(int s) {  // s is white adj
+        assert(colors[s] == 0);
+        colors[s] = 1;
+        for (auto u : invert_adj[s])
+            if (colors[u] == 0) {
+                dfs_2(u);
+            }
+        colors[s] = 2;
+        num_of_vret_SCC[s] = SCC_cur_numb;
+    }
+
+ public:
+    Graph() = default;    // numbering of vert beg with 0
+    explicit Graph(int n) { adj.resize(n); invert_adj.resize(n); }
+    stack<int> order;
+    void add_spec_num(int ver1, int ver2) {  // fix if numbering
+        --ver1;                              // of vert beg with 1
+        --ver2;
+        if (max(ver1, ver2) + 1 > adj.size()) {
+            adj.resize(max(ver1, ver2) + 1);
+            invert_adj.resize(max(ver1, ver2) + 1);
+        }
+        adj[ver1].insert(ver2);
+        invert_adj[ver2].insert(ver1);
+    }
+    void DFS() {
+        while (!order.empty())
+            order.pop();
+        colors.clear();
+        colors.resize(adj.size(), 0);
+        for (int i = 0; i < adj.size(); ++i)
+            if (colors[i] == 0)
+                dfs(i);
+    }
+    void DFS_in_time_desc_order() {
+        SCC_cur_numb = 0;
+        colors.clear();
+        colors.resize(adj.size(), 0);
+        num_of_vret_SCC.resize(adj.size(), -1);
+        while (!order.empty()) {
+            int s = order.top();
+            order.pop();
+            if (colors[s] == 0) {
+                dfs_2(s);
+                ++SCC_cur_numb;
+            }
+        }
+    }
+    pair<int, int> num_of_sourses_and_sinks() {
+        DFS();
+        DFS_in_time_desc_order();
+        SCC.clear();
+        SCC.resize(SCC_cur_numb, 2);
+        for (int i = 0; i < adj.size(); ++i)
+            for (auto j : adj[i])
+                if (num_of_vret_SCC[j] != num_of_vret_SCC[i]) {
+                    if (SCC[num_of_vret_SCC[i]] == 1 ||
+                                            SCC[num_of_vret_SCC[i]] == 3)
+                        SCC[num_of_vret_SCC[i]] = 3;
+                    else
+                        SCC[num_of_vret_SCC[i]] = 0;
+                    if (SCC[num_of_vret_SCC[j]] == 0 ||
+                                            SCC[num_of_vret_SCC[j]] == 3)
+                        SCC[num_of_vret_SCC[j]] = 3;
+                    else
+                        SCC[num_of_vret_SCC[j]] = 1;
+                }
+        int sour_cnt = 0, sink_cnt = 0;
+        for (auto i : SCC) {
+            if (i == 0) {
+                ++sour_cnt;
+            } else if (i == 1) {
+                ++sink_cnt;
+            } else if (i == 2) {
+                ++sour_cnt;
+                ++sink_cnt;
+            }
+        }
+        return {sour_cnt, sink_cnt};
+    }
+    size_t SCC_num() {
+        return SCC.size();
+    }
+};
+int funk(Graph &gr, int n) {
+    pair<int, int> p = gr.num_of_sourses_and_sinks();
+    if (gr.SCC_num() > 1)
+        return max(p.first, p.second);
+    return 0;
+}
+int main() {
+    int n, m;
+    cin >> n >> m;
+    int adj1, adj2;
+    Graph gr(n);
+    for (int i = 0; i < m; ++i) {
+        cin >> adj1 >> adj2;
+        gr.add_spec_num(adj1, adj2);
+    }
+    int ans = funk(gr, n);
+    cout << ans;
+}
