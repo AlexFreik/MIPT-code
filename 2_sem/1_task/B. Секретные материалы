@@ -1,0 +1,100 @@
+/*
+Crate Top si]ort, in first lone n and m, n - size of graph(numerize from zero) 
+and m - number of adge in graph. Print NO if there no order(graph have a cicle)
+else print YES and order.
+graph related
+Пример 1
+Ввод	Вывод
+4 5
+0 2
+2 1
+1 3
+2 3
+0 3
+YES
+0 2 1 3 
+Пример 2
+Ввод	Вывод
+3 3
+0 1
+1 2
+2 0
+NO
+Пример 3
+Ввод	Вывод
+2 2
+0 1
+1 1
+NO
+*/
+
+#include<vector>
+#include<iostream>
+#include<cassert>
+#include<set>
+#include<stack>
+#include <utility>
+#include <algorithm>
+using namespace std;
+
+class Graph {
+using VP = vector<pair<int, int>>;
+using VI = vector<int>;
+using VUI = vector<unsigned int>;
+    vector<set<int>> adj;
+    VI colors;  // 0 - white, 1 - grey, 2 - black
+    void dfs(int s) {  // s is white adj
+        assert(colors[s] == 0);
+        colors[s] = 1;
+        for (auto u : adj[s])
+            if (colors[u] == 0) {
+                dfs(u);
+            } else if (colors[u] == 1) {
+                order_key = false;
+            }
+        colors[s] = 2;
+        order.push(s);
+    }
+
+ public:
+    Graph() = default;
+    explicit Graph(int n) { adj.resize(n); }  // numbering of vert beg with 0
+    stack<int> order;
+    bool order_key;
+    void add(int ver1, int ver2) {
+        if (max(ver1, ver2) + 1 > adj.size())
+            adj.resize(max(ver1, ver2) + 1);
+        adj[ver1].insert(ver2);
+    }
+    void DFS() {
+        while (!order.empty())
+            order.pop();
+        order_key = true;
+        colors.clear();
+        colors.resize(adj.size(), 0);
+        for (int i = 0; i < adj.size(); ++i)
+            if (colors[i] == 0)
+                dfs(i);
+    }
+};
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+    int adj1, adj2;
+    Graph gr(n);
+    for (int i = 0; i < m; ++i) {
+        cin >> adj1 >> adj2;
+        gr.add(adj1, adj2);
+    }
+    gr.DFS();
+    if (gr.order_key) {
+        cout << "YES\n";
+        while (!gr.order.empty()) {
+            cout << gr.order.top() << " ";
+            gr.order.pop();
+        }
+    } else {
+         cout << "NO\n";
+    }
+}
