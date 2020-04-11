@@ -1,0 +1,111 @@
+/*
+A. Who let the Rick out?
+Ограничение времени    1 секунда
+Ограничение памяти    256Mb
+Ввод    стандартный ввод или input.txt
+Вывод    стандартный вывод или output.txt
+Рик и Морти снова бороздят просторы вселенных, но решили
+ ограничиться только теми, номера которых меньше M.
+ Они могут телепортироваться из вселенной с номером z
+ во вселенную (z+1) mod M за a бутылок лимонада или
+ во вселенную (z2+1) mod M за b бутылок лимонада.
+ Рик и Морти хотят добраться из вселенной с номером x
+ во вселенную с номером y. Сколько бутылок лимонада
+ отдаст Рик за такое путешествие, если он хочет потратить
+ их как можно меньше?
+
+Формат ввода
+В строке подряд даны количество бутылок a за
+первый тип телепортации, количество бутылок b
+за второй тип телепортации, количество вселенных M,
+ номер стартовой вселенной x, номер конечной вселенной
+ y (0 ≤ a, b ≤ 100, 1 ≤ M ≤ 106, 0 ≤ x, y < M).
+
+Формат вывода
+Выведите одно число — количество бутылок лимонада, которые отдаст Рик за такое путешествие.
+
+Пример 1
+Ввод    Вывод
+3 14 15 9 9
+0
+Пример 2
+Ввод    Вывод
+6 1 5 2 3
+6
+Пример 3
+Ввод    Вывод
+6 1 5 2 1
+2
+*/
+
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <utility>
+#include <cassert>
+
+template<class T, class DistT>
+bool Relax_stl_priority_queue(size_t parent, size_t child, T edge_weight,
+                              std::vector<DistT> &distances) {
+    // true if the function worked
+    T inf = -1;
+    assert(inf > 0);
+    if (distances[child] > distances[parent] + edge_weight) {
+        distances[child] = distances[parent] + edge_weight;
+        return true;
+    }
+    return false;
+}
+template<class T, class DistT>
+void DIJKSTRA_stl_priority_queue(size_t n, size_t root,
+                  std::vector<std::vector<std::pair<size_t, T>>> const &Adj,
+                  std::vector<DistT> &distances) {
+    assert(n > root && Adj.size() == n);
+    // DistT alweys unsigned
+    // Adj[i] is a list of pairs: vert to that i have edges and this edge val
+    typedef std::pair<size_t, DistT> P;
+    auto greater = [](const P &a, const P &b) {
+        return a.second > b.second ||
+        (a.second == b.second && a.first > b.first);
+    };
+    std::priority_queue<P, std::vector<P>, decltype(greater)> Q(greater);
+    std::vector<bool> S(n, false);
+    DistT inf = -1;
+    assert(inf > 0);
+    distances.clear();
+    distances = std::vector<DistT>(n, inf);
+    distances[root] = 0;
+    Q.push({root, 0});
+    while (!Q.empty()) {
+        P min = Q.top();
+        Q.pop();
+        // to not checking checked vert many times
+        if (S[min.first]) continue;
+        // add our min vert to set of checked vert
+        S[min.first] = true;
+        for (auto vert : Adj[min.first])
+            if (Relax_stl_priority_queue(min.first,
+                                         vert.first,
+                                         vert.second,
+                                         distances))
+                Q.push({vert.first, distances[vert.first]});
+    }
+}
+
+uint32_t funk(uint32_t a, uint32_t b, uint32_t M, uint32_t x, uint32_t y,
+          std::vector<std::vector<std::pair<size_t, uint32_t>>> &Adj) {
+    // fill Adj
+    for (size_t i = 0; i < M; ++i) {
+        Adj[i].push_back({(i + 1) % M, a});
+        Adj[i].push_back({(static_cast<uint64_t>(i) * i + 1) % M, b});
+    }
+    std::vector<uint32_t> distances;
+    DIJKSTRA_stl_priority_queue(M, x, Adj, distances);
+    return distances[y];
+}
+int main() {
+    uint32_t a, b, M, x, y;
+    std::cin >> a >> b >> M >> x >> y;
+    std::vector<std::vector<std::pair<size_t, uint32_t>>> Adj(M);
+    std::cout << funk(a, b, M, x, y, Adj);
+}
