@@ -48,8 +48,6 @@ template<class T, class DistT>
 bool Relax_stl_priority_queue(size_t parent, size_t child, T edge_weight,
                               std::vector<DistT> &distances) {
     // true if the function worked
-    T inf = -1;
-    assert(inf > 0);
     if (distances[child] > distances[parent] + edge_weight) {
         distances[child] = distances[parent] + edge_weight;
         return true;
