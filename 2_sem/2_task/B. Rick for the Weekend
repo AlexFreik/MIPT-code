@@ -1,1 +1,125 @@
-b
+/* B. Rick for the Weekend
+Ограничение времени    0.3 секунды
+Ограничение памяти    256Mb
+Ввод    стандартный ввод или input.txt
+Вывод    стандартный вывод или output.txt
+Рику необходимо попасть на межвселенную конференцию.
+ За каждую телепортацию он платит бутылками лимонада,
+ поэтому хочет потратить их на дорогу как можно меньше
+ (он же всё-таки на конференцию едет!). Однако после K перелетов
+ подряд Рика начинает сильно тошнить, и он ложится спать на день.
+ Ему известны все существующие телепортации.
+ Теперь Рик хочет найти путь (наименьший по стоимости в бутылках лимонада),
+ учитывая, что телепортация не занимает времени,
+ а до конференции осталось 10 минут (то есть он может совершить не более K перелетов)!
+
+Формат ввода
+В первой строке находятся количество вселенных N,
+ количество существующих телепортаций M,
+ количество перелетов подряд K, номер вселенной Рика S,
+ номер вселенной конференции F (2 ≤ N ≤ 300, 1 ≤ M ≤ 105, 1 ≤ K ≤ 300, 1 ≤ S ≤ N, 1 ≤ F ≤ N).
+
+Далее идет M строк, задающих телепортации.
+ i-я строка содержит три натуральных числа: Si, Fi и Pi,
+ где Si - номер вселенной, из которой ведет i-я телепортация,
+ Fi - номер вселенной, в которую ведет i-я телепортация,
+ Pi - стоимость i-й телепортации. 1 ≤ Si ≤ N, 1 ≤ Fi ≤ N, 1 ≤ Pi ≤ 106.
+
+Формат вывода
+Выведите одно число - минимальную стоимость пути, подходящего для профессора.
+ Если профессор не сможет за K ночей добраться до конференции, выведите число -1.
+
+Пример 1
+Ввод    Вывод
+5 7 2 4 1
+1 2 6
+5 1 1
+4 1 9
+4 5 3
+4 3 2
+2 5 7
+3 5 1
+4
+Пример 2
+Ввод    Вывод
+3 3 1 1 3
+1 2 4
+2 3 5
+3 1 6
+-1
+Примечания
+Не существует телепортов, ведущих из одной вселенной в неё же саму,
+ в рамках этого путешествия ;)
+ */
+
+#include <iostream>
+#include <vector>
+#include <utility>
+#include <cassert>
+
+template<class T, class DistT>
+bool Relax_limited_edges(size_t parent, size_t child, T edge_weight,
+                         std::vector<std::pair<DistT, DistT>> &distances) {
+    // true if the function worked
+    if (distances[child].second > distances[parent].first + edge_weight) {
+        distances[child].second = distances[parent].first + edge_weight;
+        return true;
+    }
+    return false;
+}
+template<class T, class DistT>
+void BELLMAN_FORD_limited_edges(std::vector
+                                <std::vector<std::pair<size_t, T>>> const &Adj,
+                                size_t root,
+                                std::vector<DistT> &distances,
+                                size_t limit) {
+    size_t n = Adj.size();
+    limit = (n < limit ? n : limit);
+    assert(n > root);
+    // DistT alweys unsigned
+    // Adj[i] is a list of pairs: vert to that i have edges and this edge val
+    // vector with minimum dist for k limit edge and for k+1 limit edje
+    DistT inf = -1;
+    assert(inf > 0);
+    std::vector<std::pair<DistT, DistT>> dists(n, {inf, inf});
+    dists[root] = {0, inf};
+    /*
+     In this algirithm for each step i of cycle
+     for every j dists[j].first is a length of minimal way
+     from root to j that contain i or lesser edges.
+     */
+    for (size_t i = 0; i < limit; ++i) {
+        for (size_t i = 0; i < n; ++i)
+            for (auto vert : Adj[i])
+                if (dists[i].first != inf)
+                    Relax_limited_edges(i, vert.first,
+                                        vert.second, dists);
+        for (auto &p : dists)
+            p.first = p.second;
+    }
+    distances.clear();
+    for (auto p : dists)
+        distances.push_back(p.first);
+}
+
+int32_t funk(size_t N, size_t M, size_t K, size_t root, size_t f,
+          std::vector<std::vector<std::pair<size_t, uint32_t>>> &Adj) {
+    std::vector<uint32_t> distances;
+    BELLMAN_FORD_limited_edges(Adj, root, distances, K);
+    uint32_t inf = -1;
+    if (distances[f] != inf)
+        return distances[f];
+    else
+        return -1;
+}
+int main() {
+    uint32_t N, M, K, S, F;
+    std::cin >> N >> M >> K >> S >> F;
+    std::vector<std::vector<std::pair<size_t, uint32_t>>> Adj(N);
+    uint32_t s, f, length;
+    for (size_t i = 0; i < M; ++i) {
+        std::cin >> s >> f >> length;
+        Adj[--s].push_back({--f, length});
+    }
+    std::cout << funk(N, M, K, --S, --F, Adj);
+}
