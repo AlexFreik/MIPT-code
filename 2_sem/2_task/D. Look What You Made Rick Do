@@ -39,36 +39,27 @@ void TRANSITIVE_CLOSURE(std::vector<std::vector<bool>> &data) {
     uint32_t base = sizeof(type) * 8;
     size_t n = data.size();
     size_t matrix_size = n / base + (n % base == 0 ? 0 : 1);
-    std::vector<std::vector<type>> T_lines(n), T_columns(n);
+    std::vector<std::vector<type>> T_lines(n);
     uint32_t cnt = base;
     // fill T_lines and T_columns
     // else type can overload type(1) in left shift operation data[i][j] << cnt
-    type bit_lines, bit_columns;
+    type bit_lines;
     for (size_t i = 0; i < n; ++i, cnt = base)
         for (size_t j = 0; j < n; ++j) {
             bit_lines = data[i][j];
-            bit_columns = data[j][i];
             if (cnt == base) {
                 cnt = 0;
                 T_lines[i].push_back(bit_lines);
-                T_columns[i].push_back(bit_columns);
             } else {
-                *T_lines[i].rbegin() |= (bit_lines << cnt);
-                *T_columns[i].rbegin() |= (bit_columns << cnt);
+                *T_lines[i].rbegin() |= bit_lines << cnt;
             }
             ++cnt;
         }
     for (size_t k = 0; k < n; ++k)
-        for (size_t i = 0; i < n; ++i) {
-            if (T_columns[k][i / base] >> i % base & 1)
-                for (size_t j = 0; j < matrix_size; ++j) {
+        for (size_t i = 0; i < n; ++i)
+            if (T_lines[i][k / base] >> k % base & 1)
+                for (size_t j = 0; j < matrix_size; ++j)
                     T_lines[i][j] |= T_lines[k][j];
-                }
-            if (T_lines[k][i / base] >> i % base & 1)
-                for (size_t j = 0; j < matrix_size; ++j) {
-                    T_columns[i][j] |= T_columns[k][j];
-                }
-        }
     // fill data to TRANSITIVE CLOSURE
     for (size_t i = 0; i < n; ++i)
         for (size_t j = 0; j < n; ++j)
