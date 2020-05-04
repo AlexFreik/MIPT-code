@@ -142,7 +142,6 @@ int main() {
         std::cin >> u >> v >> cost;
         assert(u <= n && v <= n);
         Adj[--u].push_back({--v, cost});
-        Adj[v].push_back({u, cost});
     }
     std::cout << MST_KRUSKAL(Adj);
 }
