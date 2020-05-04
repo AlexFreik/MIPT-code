@@ -114,7 +114,7 @@ const uint32_t& extract_val(const Trip &node) {
     return node.third;
 }
 
-uint32_t MST_KRUSKAL(std::vector<std::vector<
+uint32_t MST_KRUSKAL(const std::vector<std::vector<
                      std::pair<size_t, uint32_t>>> &Adj) {
     std::vector<Trip> adges;
     for (size_t num = 0; num < Adj.size(); ++num)
