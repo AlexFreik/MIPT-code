@@ -1,0 +1,148 @@
+//
+//  solution.cpp
+//  ALgorithms hw
+//
+//  Created by Александр Фреик on 03.05.2020.
+//  Copyright © 2020 Freik B05-911. All rights reserved.
+//
+
+/*
+ B. MST-2 (3 балла)
+
+ Ограничение времени    1 секунда
+ Ограничение памяти    256Mb
+ Ввод    стандартный ввод или input.txt
+ Вывод    стандартный вывод или output.txt
+ Требуется найти в связном графе остовное дерево минимального веса.
+ Воспользуйтесь алгоритмом Крускала.
+ Формат ввода
+
+ Первая строка входного файла содержит два натуральных числа
+ n и m — количество вершин и ребер графа соответственно.
+ Следующие m строк содержат описание ребер по одному на строке.
+ Ребро номер i описывается тремя натуральными числами
+ bi, ei и wi — номера концов ребра и его вес соответственно
+ (1 ≤ bi, ei ≤ n, 0 ≤ wi ≤ 100 000). n ≤ 20 000, m ≤ 100 000.
+ Граф является связным.
+ Формат вывода
+
+ Первая строка выходного файла должна содержать одно
+ натуральное число — вес минимального остовного дерева.
+ */
+
+#include <iostream>
+#include <vector>
+#include <cassert>
+#include <utility>
+
+//------------DisjointSetForest-----------------
+class DisjointSetForest {
+    // [i].first - parent (set) of i
+    // and [i].second is rank of it's set
+    std::vector<std::pair<size_t, size_t>> nodes;
+
+  public:
+    explicit DisjointSetForest(size_t n);
+    size_t find_set(size_t n);
+    bool from_same_set(size_t n, size_t m);
+    void unite(size_t n, size_t m);
+};
+DisjointSetForest::DisjointSetForest(size_t n) {
+    for (size_t cnt = 0; cnt < n; ++cnt)
+        this->nodes.push_back({cnt, 0});
+}
+
+size_t DisjointSetForest::find_set(size_t n) {
+    assert(n < this->nodes.size());
+    if (n != nodes[n].first)
+        nodes[n].first = find_set(nodes[n].first);
+    return nodes[n].first;
+}
+bool DisjointSetForest::from_same_set(size_t n, size_t m) {
+    assert(n < this->nodes.size());
+    n = this->find_set(n);
+    m = this->find_set(m);
+    return n == m;
+}
+void DisjointSetForest::unite(size_t n, size_t m) {
+    n = this->find_set(n);
+    m = this->find_set(m);
+    if (nodes[n].second > nodes[m].second)
+        nodes[m].first = n;
+    else
+        nodes[n].first = m;
+        if (nodes[n].second == nodes[m].second)
+            ++nodes[m].second;
+}
+
+//----------------sort--------------
+template<class T, class ValT, class Extracter>
+void radix_LSD(std::vector<T> &vec, size_t size,
+               Extracter extractValT = Extracter()) {
+    auto beg = vec.begin();
+    int N = 8;
+    int r = (32 + N - 1) / N;
+    uint16_t count_size = 1 << N;
+    auto end = beg + size;
+    T* sort_vec = new T[size];
+    ValT* counter = new ValT[count_size];
+    for (int i = 0; i < r; ++i) {
+        for (size_t j = 0; j < count_size; ++j)
+            counter[j] = 0;
+        for (auto ptr = beg; ptr != end; ++ptr)
+            ++counter[extractValT(*ptr) >> (i * N) & (count_size - 1)];
+        for (unsigned j = 1; j < count_size; ++j)
+            counter[j] += counter[j - 1];
+        for (auto ptr = end; ptr != beg; --ptr)
+            sort_vec[--counter[extractValT(*(ptr - 1)) >>
+                    (i * N) & (count_size - 1)]] = *(ptr - 1);
+        for (int j = 0; j < size; ++j)
+            *(beg + j) = sort_vec[j];
+    }
+    delete[] sort_vec;
+    delete[] counter;
+}
+//----------------MST_KRUSKAL----------------
+template<class T1, class T2, class T3>
+struct triplet {
+    T1 first;
+    T2 second;
+    T3 third;
+};
+using Trip = triplet<size_t, size_t, uint32_t>;
+const uint32_t& extract_val(const Trip &node) {
+    return node.third;
+}
+
+uint32_t MST_KRUSKAL(std::vector<std::vector<
+                     std::pair<size_t, uint32_t>>> &Adj) {
+    std::vector<Trip> adges;
+    for (size_t num = 0; num < Adj.size(); ++num)
+        for (auto p : Adj[num])
+            adges.push_back({num, p.first, p.second});
+    radix_LSD<Trip, uint32_t>(adges, adges.size(), extract_val);
+    DisjointSetForest forest(Adj.size());
+    uint32_t ans = 0;
+    for (auto edge : adges) {
+        if (!forest.from_same_set(edge.first, edge.second)) {
+            ans += edge.third;
+            forest.unite(edge.first, edge.second);
+        }
+    }
+    return ans;
+}
+
+//---------------------funk--------------------
+int main() {
+    size_t n, m;
+    std::cin >> n >> m;
+    std::vector<std::vector<std::pair<size_t, uint32_t>>> Adj(n);
+    uint32_t u, v, cost;
+    for (size_t cnt = 0; cnt < m; ++cnt) {
+        std::cin >> u >> v >> cost;
+        assert(u <= n && v <= n);
+        Adj[--u].push_back({--v, cost});
+        Adj[v].push_back({u, cost});
+    }
+    std::cout << MST_KRUSKAL(Adj);
+}
