@@ -27,17 +27,16 @@
 #include <vector>
 #include <algorithm>
 
-void template_search(const std::string &temp,
-                    std::string &text) {
-    size_t t = temp.size(), n = text.size() + temp.size();
-    text = temp + text;
-    std::vector<size_t> preff(t);
+
+void z_func_for_template_calculation(const std::string &text,
+                                     size_t template_size,
+                                     std::vector<size_t> &preff) {
     //  calculate z function for template
-    for (size_t left = 0, right = 0, cnt = 1; cnt < t; ++cnt) {
+    for (size_t left = 0, right = 0, cnt = 1; cnt < template_size; ++cnt) {
         if (right >= cnt) {
             preff[cnt] = std::min(preff[cnt - left], right - cnt + 1);
         }
-        while (cnt + preff[cnt] < n &&
+        while (cnt + preff[cnt] < text.size() &&
                text[preff[cnt]] == text[cnt + preff[cnt]]) {
             ++preff[cnt];
         }
@@ -46,6 +45,13 @@ void template_search(const std::string &temp,
             right = cnt + preff[cnt] - 1;
         }
     }
+}
+void template_search(const std::string &temp,
+                     std::string &text) {
+    size_t t = temp.size(), n = text.size() + temp.size();
+    text = temp + text;
+    std::vector<size_t> preff(t);
+    z_func_for_template_calculation(text, t, preff);
     //  calculate z function for text and cout immediately
     for (size_t left = 0, right = 0, cnt = t, cnt_preff = 0; cnt < n; ++cnt) {
         if (right >= cnt) {
