@@ -1,5 +1,5 @@
 /*
-https://contest.yandex.ru/contest/19772/run-report/36795929/
+https://contest.yandex.ru/contest/19772/run-report/37321928/
  A. Поиск подстроки
  Язык    Ограничение времени    Ограничение памяти    Ввод    Вывод
  Все языки    0.1 секунда    32Mb    стандартный ввод или input.txt    стандартный вывод или output.txt
@@ -27,18 +27,32 @@ https://contest.yandex.ru/contest/19772/run-report/36795929/
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cassert>
 
+char get_value(const std::string &temp,
+                 const std::string &text,
+                 size_t index) {
+    assert(index < temp.size() + text.size());
+    char retVal;
+    if (index < temp.size()) {
+        retVal = temp[index];
+    } else {
+        retVal = text[index - temp.size()];
+    }
+    return retVal;
+}
 
-void z_func_for_template_calculation(const std::string &text,
-                                     size_t template_size,
+void z_func_for_template_calculation(const std::string &temp,
+                                     const std::string &text,
                                      std::vector<size_t> &preff) {
     //  calculate z function for template
-    for (size_t left = 0, right = 0, cnt = 1; cnt < template_size; ++cnt) {
+    for (size_t left = 0, right = 0, cnt = 1; cnt < temp.size(); ++cnt) {
         if (right >= cnt) {
             preff[cnt] = std::min(preff[cnt - left], right - cnt + 1);
         }
-        while (cnt + preff[cnt] < text.size() &&
-               text[preff[cnt]] == text[cnt + preff[cnt]]) {
+        while (cnt + preff[cnt] < temp.size() + text.size() &&
+               get_value(temp, text, preff[cnt]) ==
+               get_value(temp, text, cnt + preff[cnt])) {
             ++preff[cnt];
         }
         if (cnt + preff[cnt] - 1 > right) {
@@ -48,18 +62,18 @@ void z_func_for_template_calculation(const std::string &text,
     }
 }
 void template_search(const std::string &temp,
-                     std::string &text) {
+                     const std::string &text) {
     size_t t = temp.size(), n = text.size() + temp.size();
-    text = temp + text;
     std::vector<size_t> preff(t);
-    z_func_for_template_calculation(text, t, preff);
+    z_func_for_template_calculation(temp, text, preff);
     //  calculate z function for text and cout immediately
     for (size_t left = 0, right = 0, cnt = t, cnt_preff = 0; cnt < n; ++cnt) {
         if (right >= cnt) {
             cnt_preff = std::min(preff[cnt - left], right - cnt + 1);
         }
         while (cnt + cnt_preff < n && cnt_preff < t &&
-               text[cnt_preff] == text[cnt + cnt_preff]) {
+               get_value(temp, text, cnt_preff) ==
+               get_value(temp, text, cnt + cnt_preff)) {
             ++cnt_preff;
         }
         if (cnt + cnt_preff - 1 > right) {
