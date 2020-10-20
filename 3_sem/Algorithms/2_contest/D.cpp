@@ -77,7 +77,6 @@ T suff_array<T>::ring::add(T value, T add) const {
     return value;
 }
 // ring nested class funktions
-
 template<typename T>
 void suff_array<T>::build_suff_array_first_step() {
     assert(array.size() == text.size() + 1);
