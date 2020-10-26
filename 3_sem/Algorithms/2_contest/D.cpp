@@ -1,5 +1,5 @@
 /*
-https://contest.yandex.ru/contest/20019/run-report/36987099/
+https://contest.yandex.ru/contest/20019/run-report/38134933/
 D. Количество различных подстрок
  
  Ограничение времени    0.2 секунды
@@ -9,13 +9,10 @@ D. Количество различных подстрок
  Дана строка длины n. Найти количество ее различных подстрок. Используйте суффиксный массив.
  Построение суффиксного массива выполняйте за O(n log n). Вычисление количества различных подстрок выполняйте за O(n).
  Формат ввода
-
  Строка.
  Формат вывода
-
  Число - количество различных подстрок.
  Пример
-
  Ввод    Вывод
  abab
  7*/
@@ -31,17 +28,10 @@ namespace suff_array {
 // begin of the namespace
 template<typename T>
 class suff_array {
-    struct ring {
-        explicit ring(size_t base) : base(base) {}
-        size_t base;
-        T sub(T value, T subb) const;
-        T add(T value, T add) const;
-    };
-    void build_suff_array_first_step();
-    void build_suff_array_next_step(size_t k);
+    void build_suff_array_preparing();
+    void build_suff_array_step(size_t k);
     std::vector<T> eq_class;
     T eq_class_number;
-    ring R;
 
   public:
     explicit suff_array(std::string &&text);
@@ -52,34 +42,9 @@ class suff_array {
     std::vector<T> array;
     std::vector<T> lcp;
 };
-// ring nested class funktions
-template<typename T>
-T suff_array<T>::ring::sub(T value, T subb) const {
-    assert(value < base && subb < base);
-    if (value >= subb) {
-        value -= subb;
-    } else {
-        value +=  base - subb;
-    }
-    value = value - static_cast<T>((value / base) * base);
-    if (value < 0) {
-        value += base;
-    }
-    return value;
-}
-template<typename T>
-T suff_array<T>::ring::add(T value, T add) const {
-    assert(add < base && value < base);
-    value += add;
-    if (value > base) {
-        value -= base;
-    }
-    return value;
-}
-// ring nested class funktions
 
 template<typename T>
-void suff_array<T>::build_suff_array_first_step() {
+void suff_array<T>::build_suff_array_preparing() {
     assert(array.size() == text.size() + 1);
     assert(eq_class.size() == text.size() + 1);
     std::map<char, std::vector<T>> pockets;
@@ -100,11 +65,14 @@ void suff_array<T>::build_suff_array_first_step() {
     }
 }
 template<typename T>
-void suff_array<T>::build_suff_array_next_step(size_t k) {
-    // create pockets and put suff-s there according to the first part eq_class
+void suff_array<T>::build_suff_array_step(size_t k) {
+    assert(k > 0);
+    // creates pockets and put suff-s there according to the first part eq_class
     std::vector<std::vector<T>> pockets(eq_class_number);
+    T base = static_cast<T>(array.size());
     for (size_t ind = 0; ind < array.size(); ++ind) {
-        T array_ind = R.sub(array[ind], 1 << (k-1));
+        assert(array[ind] < base && (1 << (k - 1)) < base);
+        T array_ind = (array[ind] + base - (1 << (k - 1))) % base;
         pockets[eq_class[array_ind]].push_back(array_ind);
     }
     std::vector<T> temp_eq_classes(eq_class.size());
@@ -117,8 +85,11 @@ void suff_array<T>::build_suff_array_next_step(size_t k) {
         ++ind_cnt;
         for (T ind = 1; ind < pocket.size(); ++ind) {
             array[ind_cnt] = pocket[ind];
-            T curr_second_part_class = eq_class[R.add(pocket[ind], 1 << (k-1))],
-            prev_second_part_class = eq_class[R.add(pocket[ind - 1], 1 << (k-1))];
+            assert(pocket[ind] < base && (1 << (k - 1)) < base);
+            T second_part_ind = (pocket[ind] + (1 << (k - 1))) % base;
+            T prev_2nd_part_ind = (pocket[ind - 1] + (1 << (k - 1))) % base;
+            T curr_second_part_class = eq_class[second_part_ind];
+            T prev_second_part_class = eq_class[prev_2nd_part_ind];
             assert(curr_second_part_class >= prev_second_part_class);
             if (curr_second_part_class != prev_second_part_class) {
                 ++eq_class_number;
@@ -128,17 +99,17 @@ void suff_array<T>::build_suff_array_next_step(size_t k) {
         }
         ++eq_class_number;
     }
-    eq_class = temp_eq_classes;
+    eq_class = std::move(temp_eq_classes);
 }
 template<typename T>
 suff_array<T>::suff_array(std::string &&text)
                         : text(text),
                         array(std::vector<T>(text.size() + 1)),
-                        eq_class(std::vector<T>(text.size() + 1)),
-                        R(text.size() + 1) {
-    build_suff_array_first_step();
-    for (size_t k = 0; 1 << k < array.size(); ++k) {
-        build_suff_array_next_step(k + 1);
+                        eq_class(std::vector<T>(text.size() + 1)) {
+    build_suff_array_preparing();
+    for (size_t k = 1; 1 << (k - 1) < array.size(); ++k) {
+        // on each step work with
+        build_suff_array_step(k);
         if (eq_class_number == eq_class.size()) {
             break;
         }
@@ -158,40 +129,21 @@ void suff_array<T>::print_array(bool lcp) const {
     }
 }
 template<typename T>
-T diff(T a, T b) {
-    if (a >= b) return a - b;
-    return b - a;
-}
-template<typename T>
 void suff_array<T>::kasai() {
     lcp.clear();
     if (array.size() == 1) { return; }
     lcp = std::vector<T>(array.size());
     // inv_arr[i] -- number of i suff in arr
-    std::vector<T> inverse_array(array.size());
-    for (T ind = 0; ind < array.size(); ++ind) {
-        inverse_array[array[ind]] = ind;
-    }
+    const std::vector<T> &inverse_array = eq_class;
     assert(array[0] == array.size() - 1);
-    T cnt = inverse_array[0];
-    for (size_t ind2 = array[cnt - 1]; ind2 < text.size(); ++ind2) {
-        if (text[ind2] == text[ind2 - array[cnt - 1] + 0]) {
-            ++lcp[cnt];
-        } else {
-            break;
-        }
-    }
-    for (T ind = 1; ind < array.size() - 1; ++ind) {
-        T cnt = inverse_array[ind], prev_lcp = lcp[inverse_array[ind - 1]];
-        lcp[cnt] = (prev_lcp > 1 ? prev_lcp - 1 : 0);
-        T dif = diff(ind, array[cnt - 1]), min = std::min(array[cnt - 1], ind);
-        for (size_t ind2 = min + dif + lcp[cnt]; ind2 < text.size(); ++ind2) {
-            if (text[ind2] == text[ind2 - dif]) {
-                ++lcp[cnt];
-            } else {
-                break;
-            }
-        }
+    for (T ind = 0, cnt = inverse_array[0], prev_lcp = 1;
+         ind < array.size() - 1;
+         prev_lcp = std::max<T>(lcp[cnt], 1), ++ind, cnt = inverse_array[ind]) {
+        lcp[cnt] = prev_lcp - 1;
+        T prev_suff = array[cnt - 1];
+        T max = std::max(prev_suff, ind);
+        while (max + lcp[cnt] < text.size() &&
+               text[ind + lcp[cnt]] == text[prev_suff + lcp[cnt]]) { ++lcp[cnt]; }
     }
 }
 template<typename T>
