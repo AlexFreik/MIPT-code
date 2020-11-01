@@ -1,5 +1,2 @@
-# ATP-contests
-
-## 3 Semester
-### Алгоритмы и структуры данных
-Задачи на 1й контест можно найти в пул реквестах.
+# MIPT-code
+The code that I have written on the lessons in the University.
