@@ -1,0 +1,218 @@
+//
+//  main.cpp
+//  ALgorithms hw
+//
+//  Created by Александр Фреик on 19.05.2020.
+//  Copyright © 2020 Freik B05-911. All rights reserved.
+//
+/*
+ C. Художник и фотограф (4 балла)
+
+ Ограничение времени    1 секунда
+ Ограничение памяти    64Mb
+ Ввод    стандартный ввод или input.txt
+ Вывод    стандартный вывод или output.txt
+ У художника-авангардиста есть полоска разноцветного холста.
+ За один раз он перекрашивает некоторый отрезок полоски в некоторый цвет.
+ После каждого перекрашивания специально обученный фотограф
+ делает снимок части получившегося творения для музея современного искусства.
+ Для правильного экспонирования требуется знать яркость самого
+ темного цвета на выбранном фотографом отрезке.
+ Напишите программу для определения яркости самого темного цвета на отрезке.
+ Требуемая скорость определения яркости — O(log N).
+ Цвет задается тремя числами R, G и B (0 ≤ R, G, B ≤ 255), его яркость = R + G + B.
+ Цвет (R1, G1, B1) темнее цвета (R2, G2, B2), если R1 + G1 + B1 < R2 + G2 + B2.
+ Формат ввода
+
+ Первая строка содержит число N –– длина отрезка (координаты [0...N-1]).
+ Затем следует N строк по 3 числа –– цвета отрезка.
+ Следующая строка содержит число K –– количество перекрашиваний и фотографирований.
+ Затем задано K строк, описывающих перекрашивание и фотографирование.
+ В каждой такой строке 7 натуральных чисел: C, D, R, G, B, E, F,
+ где [C, D] –– координаты перекрашиваемого отрезка,
+ (R, G, B) –– цвет покраски, [E, F] –– фотографируемый отрезок.
+ Формат вывода
+
+ Требуется вывести K целых чисел.
+ Каждое число –– яркость самого темного цвета
+ на отрезке [E, F] после соответствующего окрашивания.
+ Пример
+
+ Ввод    Вывод
+ 5
+ 7 40 3
+ 54 90 255
+ 44 230 8
+ 33 57 132
+ 17 8 5
+ 2
+ 0 3 100 40 41 2 4
+ 2 4 0 200 57 1 3
+ */
+
+#include <vector>
+#include <cassert>
+#include <iostream>
+#include <algorithm>
+#include <utility>
+
+template<typename T, typename O>
+class SegmentTree {
+    /// .second is an add_promise,
+    /// numeration from 1
+    std::vector<std::pair<T, T>> body;
+    /// n - size of init vector, N - size with additional vals
+    size_t start, n, N;
+    T null;
+    T internal_get(size_t l, size_t r,
+                   size_t idx, size_t Tl, size_t Tr);
+    void internal_update(size_t l, size_t r, T additive,
+                         size_t idx, size_t Tl, size_t Tr);
+    void push(size_t idx);
+    void fix(size_t idx);
+
+  public:
+    SegmentTree(const std::vector<T> &init, const T null);
+    void update(size_t l, size_t r, T additive);
+    T get(size_t l, size_t r);
+};
+//----------private members-----------------
+template<typename T, typename O>
+void SegmentTree<T, O>::internal_update(size_t l, size_t r, T additive,
+                                        size_t idx, size_t Tl, size_t Tr) {
+    assert(l <= r && r < this->N);
+    push(idx);
+    if (Tl == l && Tr == r) {
+        body[idx].second = additive;
+        fix(idx);
+        return;
+    }
+    assert(idx * 2 + 1 < body.size());
+    size_t Tm = (Tl + Tr) / 2;
+    if (l <= Tm) internal_update(l, std::min(Tm, r), additive,
+                                 idx * 2, Tl, Tm);
+    if (r > Tm) internal_update(std::max(Tm + 1, l), r, additive,
+                                idx * 2 + 1, Tm + 1, Tr);
+}
+template<typename T, typename O>
+T SegmentTree<T, O>::internal_get(size_t l, size_t r,
+                                  size_t idx, size_t Tl, size_t Tr) {
+    assert(l <= r && r < this->N);
+    push(idx);
+    if (Tl == l && Tr == r)
+        return body[idx].first;
+    assert(idx * 2 + 1 < body.size());
+    T res = null;
+    size_t Tm = (Tl + Tr) / 2;
+    if (l <= Tm) res = O()(res,
+                     internal_get(l, std::min(Tm, r),
+                                  idx * 2, Tl, Tm));
+    if (r > Tm) res = O()(res,
+                    internal_get(std::max(Tm + 1, l), r,
+                                 idx * 2 + 1, Tm + 1, Tr));
+    return res;
+}
+template<typename T, typename O>
+void SegmentTree<T, O>::push(size_t idx) {
+    assert(idx < body.size());
+    if (body[idx].second != null) {
+        body[idx].first = body[idx].second;
+        if (idx * 2 < body.size()) {
+            body[idx * 2].second = body[idx].second;
+            body[idx * 2 + 1].second = body[idx].second;
+        }
+        body[idx].second = null;
+    }
+}
+template<typename T, typename O>
+void SegmentTree<T, O>::fix(size_t idx) {
+    assert(idx < body.size());
+    if (idx > 1) {
+        size_t par = idx / 2;
+        assert(body[par].second == null);
+        push(par * 2);
+        push(par * 2 + 1);
+        body[par].first = O()(body[par * 2].first, body[par * 2 + 1].first);
+        fix(par);
+    }
+}
+template<typename T, typename O>
+SegmentTree<T, O>::SegmentTree(const std::vector<T> &init,
+                               const T null) : null(null) {
+    assert(!init.empty());
+    this->n = init.size();
+    this->N = 1;
+    while (this->N < this->n) { this->N <<= 1; }
+    body = std::vector<std::pair<T, T>>(2 * this->N, {null, null});
+    this->start = this->N;
+    for (size_t i = 0; i < this->n; ++i)
+        this->body[i + this->N].first = init[i];
+    for (size_t i = this->N - 1; i > 0; --i)
+        body[i].first = O()(body[i * 2].first, body[i * 2 + 1].first);
+}
+
+template<typename T, typename O>
+void SegmentTree<T, O>::update(size_t l, size_t r, T additive) {
+    assert(l <= r && r <= this->n);
+    internal_update(l, r, additive, 1, 0, this->N - 1);
+}
+
+template<typename T, typename O>
+T SegmentTree<T, O>::get(size_t l, size_t r) {
+    assert(0 <= l && l <= r && r < this->n);
+    return internal_get(l, r, 1, 0, this->N - 1);
+}
+
+struct Triplet {
+    uint32_t from, to, num;
+};
+struct RGB {
+    uint16_t r, g, b;
+    uint16_t brightness() const {
+        return r + g + b;
+    }
+};
+struct Request {
+    std::pair<uint32_t, uint32_t>  CD;
+    RGB color;
+    std::pair<uint32_t, uint32_t>  EF;
+};
+struct color_min {
+    uint16_t operator()(uint16_t a, uint16_t b) {
+        return std::min(a, b);
+    }
+};
+
+void funk(const std::vector<uint16_t> &data,
+          const std::vector<Request> &requests,
+          std::vector<uint16_t> &ans) {
+    SegmentTree<uint16_t, color_min> tree(data, 256 * 3 + 1);
+    for (auto &req : requests) {
+        tree.update(req.CD.first, req.CD.second, req.color.brightness());
+        ans.push_back(tree.get(req.EF.first, req.EF.second));
+    }
+}
+int main() {
+    // input
+    uint32_t N, m;
+    std::cin >> N;
+    std::vector<uint16_t> data(N);
+    for (auto &br : data) {
+        RGB col;
+        std::cin >> col.r >> col.g >> col.b;
+        br = col.brightness();
+    }
+    std::cin >> m;
+    std::vector<Request> requests(m);
+    for (auto &req : requests)
+        std::cin
+        >> req.CD.first >> req.CD.second
+        >> req.color.r >> req.color.g >> req.color.b
+        >> req.EF.first >> req.EF.second;
+    // algorithm
+    std::vector<uint16_t> ans;
+    funk(data, requests, ans);
+    // output
+    for (auto failes_req : ans)
+        std::cout << failes_req << std::endl;
+}
