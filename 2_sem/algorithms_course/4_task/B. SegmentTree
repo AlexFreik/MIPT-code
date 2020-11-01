@@ -1,0 +1,198 @@
+/*
+ B. Система бронирования (4 балла)
+
+ Ограничение времени    1 секунда
+ Ограничение памяти    64Mb
+ Ввод    стандартный ввод или input.txt
+ Вывод    стандартный вывод или output.txt
+ ООО "Новые Железные Дороги" поручило вам разработать
+ систему бронирования билетов на новый маршрут поезда
+ дальнего следования. Маршрут проходит через N станций,
+ занумерованных от 0 до N-1. Вместимость поезда ограничена.
+ В систему бронирования последовательно приходят запросы
+ от пассажиров с указанием номера начальной и конечной станции,
+ а также количество билетов, которые пассажир хочет приобрести.
+ Требуемая скорость обработки каждого запроса - .
+ Формат ввода
+
+ Первая строка содержит число N –– количество станций (1 ≤ N ≤ 50 000).
+ Вторая строка содержит начальное количество проданных билетов.
+ В примере продано по одному билету на перегонах 0->1 и 4->5.
+ В третьей строке указана вместимость поезда.
+ В четвёртой — количество запросов на бронирование.
+ Далее идут непосредственно запросы в виде: номер начальной станции,
+ номер конечной станции, количество запрашиваемых билетов.
+ Формат вывода
+
+ Необходимо вывести номера запросов, которые не удалось
+ выполнить из-за отсутствия свободных мест.
+ Пример
+
+ Ввод    Вывод
+ 6
+ 1 0 0 0 1
+ 5
+ 8
+ 0 2 1
+ 1 4 2
+ 2 5 1
+ 1 3 3
+ 3 5 2
+ 0 4 1
+ 0 1 3
+ 1 3 2
+ */
+
+#include <vector>
+#include <cassert>
+#include <iostream>
+#include <algorithm>
+#include <utility>
+
+template<typename T, typename O>
+class SegmentTree {
+    /// .second is an add_promise,
+    /// numeration from 1
+    std::vector<std::pair<T, T>> body;
+    /// n - size of init vector, N - size with additional vals
+    size_t start, n, N;
+    T null;
+    T internal_get(size_t l, size_t r,
+                   size_t idx, size_t Tl, size_t Tr);
+    void internal_update(size_t l, size_t r, T additive,
+                         size_t idx, size_t Tl, size_t Tr);
+    void push(size_t idx);
+    void fix(size_t idx);
+
+  public:
+    SegmentTree(const std::vector<T> &init, const T null);
+    void update(size_t l, size_t r, T additive);
+    T get(size_t l, size_t r);
+};
+//----------private members-----------------
+template<typename T, typename O>
+void SegmentTree<T, O>::internal_update(size_t l, size_t r, T additive,
+                                        size_t idx, size_t Tl, size_t Tr) {
+    assert(l <= r && r < this->N);
+    push(idx);
+    if (Tl == l && Tr == r) {
+        body[idx].second += additive;
+        fix(idx);
+        return;
+    }
+    assert(idx * 2 + 1 < body.size());
+    size_t Tm = (Tl + Tr) / 2;
+    if (l <= Tm) internal_update(l, std::min(Tm, r), additive,
+                                 idx * 2, Tl, Tm);
+    if (r > Tm) internal_update(std::max(Tm + 1, l), r, additive,
+                                idx * 2 + 1, Tm + 1, Tr);
+}
+template<typename T, typename O>
+T SegmentTree<T, O>::internal_get(size_t l, size_t r,
+                                  size_t idx, size_t Tl, size_t Tr) {
+    assert(l <= r && r < this->N);
+    push(idx);
+    if (Tl == l && Tr == r)
+        return body[idx].first;
+    assert(idx * 2 + 1 < body.size());
+    T res = null;
+    size_t Tm = (Tl + Tr) / 2;
+    if (l <= Tm) res = O()(res,
+                     internal_get(l, std::min(Tm, r),
+                                  idx * 2, Tl, Tm));
+    if (r > Tm) res = O()(res,
+                    internal_get(std::max(Tm + 1, l), r,
+                                 idx * 2 + 1, Tm + 1, Tr));
+    return res;
+}
+template<typename T, typename O>
+void SegmentTree<T, O>::push(size_t idx) {
+    assert(idx < body.size());
+    if (body[idx].second != null) {
+        body[idx].first += body[idx].second;
+        if (idx * 2 < body.size()) {
+            body[idx * 2].second += body[idx].second;
+            body[idx * 2 + 1].second += body[idx].second;
+        }
+        body[idx].second = null;
+    }
+}
+template<typename T, typename O>
+void SegmentTree<T, O>::fix(size_t idx) {
+    assert(idx < body.size());
+    if (idx > 1) {
+        size_t par = idx / 2;
+        assert(body[par].second == null);
+        push(par * 2);
+        push(par * 2 + 1);
+        body[par].first = O()(body[par * 2].first, body[par * 2 + 1].first);
+        fix(par);
+    }
+}
+template<typename T, typename O>
+SegmentTree<T, O>::SegmentTree(const std::vector<T> &init,
+                               const T null) : null(null) {
+    assert(!init.empty());
+    this->n = init.size();
+    this->N = 1;
+    while (this->N < this->n) { this->N <<= 1; }
+    body = std::vector<std::pair<T, T>>(2 * this->N, {null, null});
+    this->start = this->N;
+    for (size_t i = 0; i < this->n; ++i)
+        this->body[i + this->N].first = init[i];
+    for (size_t i = this->N - 1; i > 0; --i)
+        body[i].first = O()(body[i * 2].first, body[i * 2 + 1].first);
+}
+
+template<typename T, typename O>
+void SegmentTree<T, O>::update(size_t l, size_t r, T additive) {
+    assert(l <= r && r <= this->n);
+    internal_update(l, r, additive, 1, 0, this->N - 1);
+}
+
+template<typename T, typename O>
+T SegmentTree<T, O>::get(size_t l, size_t r) {
+    assert(0 <= l && l <= r && r < this->n);
+    return internal_get(l, r, 1, 0, this->N - 1);
+}
+
+struct uint32_max {
+    uint32_t operator()(uint32_t a, uint32_t b) {
+        return std::max(a, b);
+    }
+};
+struct Triplet {
+    uint32_t from, to, num;
+};
+
+void funk(const std::vector<uint32_t> &data,
+          uint32_t capacity,
+          const std::vector<Triplet> &requests,
+          std::vector<uint32_t> &ans) {
+    SegmentTree<uint32_t, uint32_max> tree(data, 0);
+    for (uint32_t i = 0; i < requests.size(); ++i) {
+        uint32_t max = tree.get(requests[i].from, requests[i].to - 1);
+        if (max + requests[i].num <= capacity)
+            tree.update(requests[i].from, requests[i].to - 1, requests[i].num);
+        else
+            ans.push_back(i);
+    }
+}
+int main() {
+    // input
+    uint32_t N, capacity, m;
+    std::cin >> N;
+    std::vector<uint32_t> data(N - 1);
+    for (auto &i : data)
+        std::cin >> i;
+    std::cin >> capacity >> m;
+    std::vector<Triplet> requests(m);
+    for (auto &t : requests)
+        std::cin >> t.from >> t.to >> t.num;
+    // algorithm
+    std::vector<uint32_t> ans;
+    funk(data, capacity, requests, ans);
+    // output
+    for (auto failes_req : ans)
+        std::cout << failes_req << std::endl;
+}
