@@ -1,0 +1,272 @@
+//
+//  solution.cpp
+//  ALgorithms hw
+//
+//  Created by Александр Фреик on 03.05.2020.
+//  Copyright © 2020 Freik B05-911. All rights reserved.
+//
+
+/*
+ C. Сделай связным (4 балла)
+
+ Ограничение времени    2 секунды
+ Ограничение памяти    256Mb
+ Ввод    стандартный ввод или input.txt
+ Вывод    стандартный вывод или output.txt
+ Вам дан неориентированный граф, состоящий из n вершин.
+ На каждой вершине записано число; число, записанное
+ на вершине i, равно ai. Изначально в графе нет ни одного ребра.
+ Вы можете добавлять ребра в граф за определенную стоимость.
+ За добавление ребра между вершинами x и y надо заплатить ax + ay монет.
+ Также существует m специальных предложений,
+ каждое из которых характеризуется тремя числами x, y и w, и означает,
+ что можно добавить ребро между вершинами x и y за w монет.
+ Эти специальные предложения не обязательно использовать:
+ если существует такая пара вершин x и y, такая,
+ что для нее существует специальное предложение,
+ можно все равно добавить ребро между ними за ax + ay монет.
+ Сколько монет минимально вам потребуется, чтобы сделать граф связным?
+ Граф является связным, если от каждой вершины можно добраться
+ до любой другой вершины, используя только ребра этого графа.
+ Формат ввода
+
+ В первой строке заданы два целых числа
+ n и m (1 ≤ n ≤ 2 ⋅ 105, 0 ≤ m ≤ 2 ⋅ 105) —
+ количество вершин в графе и специальных предложений, соответственно.
+ Во второй строке заданы n целых чисел
+ (1 ≤ ai ≤ 1012) — числа, записанные на вершинах.
+ Затем следуют m строк, в каждой из которых заданы три целых числа
+ x, y и w (1 ≤ x, y ≤ n, 1 ≤ w ≤ 1012, x ≠ y), обозначающие спецпредложение:
+ можно добавить ребро между вершинами x и y за w монет.
+ Формат вывода
+
+ Выведите одно целое число — минимальное количество монет,
+ которое необходимо потратить, чтобы сделать граф связным.
+ Пример 1
+
+ Ввод    Вывод
+ 3 2
+ 1 3 3
+ 2 3 5
+ 2 1 1
+ 5
+ Пример 2
+
+ Ввод    Вывод
+ 4 0
+ 1 3 3 7
+ 16
+ Пример 3
+
+ Ввод    Вывод
+ 5 4
+ 1 2 3 4 5
+ 1 2 8
+ 1 3 10
+ 1 4 7
+ 1 5 15
+ 18
+ Примечания
+
+ В первом примере из условия можно соединить 1 и 2 при помощи
+ 2-го спецпредложения, а затем 1 и 3 без использования спецпредложения.
+ В следующих двух примерах оптимальный ответ можно получить
+ без использования спецпредложений.
+ */
+#include <iostream>
+#include <vector>
+#include <cassert>
+#include <utility>
+#include <functional>
+#include <algorithm>
+
+//-----------------------------------------
+//-------------------heap----------------------
+//-----------------------------------------
+template<class T, class Compare = std::less<T>>
+class MinHeap {
+    // heap body vector with keys
+    std::vector<std::pair<size_t, T>> body;
+    // in n-number cell is number of key of n-number vert in body
+    // vertex numerate from zero
+    std::vector<size_t> vert_body_num;
+    Compare lesser = Compare();
+    void shift_down(size_t);
+    void shift_up(size_t);
+
+ public:
+    MinHeap(size_t, Compare is_lesser = Compare());
+    size_t size() const { return this->body.size(); }  //
+    bool empty() const { return this->body.empty(); }  //
+    std::pair<size_t, T> top() const;
+    T key(size_t n) const;
+    bool in_heap(size_t) const;
+    void erase_min();
+    void decrease(size_t, const T&);
+};
+//------------constructors----------
+template<class T, class Compare>
+MinHeap<T, Compare>::MinHeap(size_t N, Compare is_lesser) : lesser(is_lesser) {
+    T inf = static_cast<T>(0) - 1;
+    // type T must be unsigned
+    assert(inf > 0 && N > 0);
+    for (size_t ind = 0; ind < N; ind++) {
+        this->body.push_back({ind, inf});
+        this->vert_body_num.push_back(ind);
+    }
+    this->body[0] = {0, 0};
+}
+//-------------------private methods---------
+template<class T, class Compare>
+void MinHeap<T, Compare>::shift_up(size_t num) {
+    // shift up the element in heap vector with number n (from zero)
+    assert(num < this->size());
+    // number of n vert in body vec
+    for (size_t new_num = (num - 1) / 2; num > 0;
+         num = new_num, (new_num -= 1) /= 2) {
+        // if child is lesser than father
+        if (lesser(this->body[num].second, this->body[new_num].second)) {
+            // change numbers of heap nodes in vert_body_num vec
+            std::swap(vert_body_num[this->body[num].first],
+                 vert_body_num[this->body[new_num].first]);
+            // swap nodes in body
+            std::swap(body[num], body[new_num]);
+        } else {
+            break;
+        }
+    }
+}
+template<class T, class Compare>
+void MinHeap<T, Compare>::shift_down(size_t num) {
+    // shift down the element in heap vector with number n (from zero)
+    assert(num < this->size());
+    while (2 * num + 2 < this->size()) {
+        size_t new_num = 2 * num +
+        (lesser(body[2 * num + 1].second, body[2 * num + 2].second) ? 1 : 2);
+        // if child is lesser than father
+        if (lesser(this->body[new_num].second, this->body[num].second)) {
+            // change numbers of heap nodes in vert_body_num vec
+            std::swap(vert_body_num[this->body[num].first],
+                 vert_body_num[this->body[new_num].first]);
+            // swap nodes in body
+            std::swap(body[num], body[new_num]);
+            num = new_num;
+        } else {
+            break;
+        }
+    }
+    if (2 * num + 2 == this->size()) {
+        size_t new_num = 2 * num + 1;
+        // if child is lesser than father
+        if (lesser(this->body[new_num].second, this->body[num].second)) {
+            // change numbers of heap nodes in vert_body_num vec
+            std::swap(vert_body_num[this->body[num].first],
+                 vert_body_num[this->body[new_num].first]);
+            // swap nodes in body
+            std::swap(body[num], body[new_num]);
+        }
+    }
+}
+//-------------publick methods-----------------
+template<class T, class Compare>
+void MinHeap<T, Compare>::erase_min() {
+    assert(!body.empty());
+    if (this->body.size() == 1) {
+        this->body.pop_back();
+        return;
+    }
+    // change numbers of heap nodes in vert_body_num vec
+    std::swap(vert_body_num[this->body.cbegin()->first],
+              vert_body_num[this->body.crbegin()->first]);
+    // swap nodes in body
+    std::swap(this->body[0], this->body[this->size() - 1]);
+    this->body.pop_back();
+    this->shift_down(0);
+}
+template<class T, class Compare>
+std::pair<size_t, T> MinHeap<T, Compare>::top() const {
+    assert(!this->body.empty());
+    return this->body[0];
+}
+template<class T, class Compare>
+T MinHeap<T, Compare>::key(size_t n) const {
+    assert(n < this->vert_body_num.size() &&
+           this->vert_body_num[n] < this->body.size());
+    return this->body[this->vert_body_num[n]].second;
+}
+template<class T, class Compare>
+bool MinHeap<T, Compare>::in_heap(size_t n) const {
+    assert(n < this->vert_body_num.size());
+    return this->vert_body_num[n] < this->body.size();
+}
+template<class T, class Compare>
+void MinHeap<T, Compare>::decrease(size_t n, const T& new_val) {
+    assert(n < this->vert_body_num.size() &&
+           this->vert_body_num[n] < this->body.size());
+    this->body[vert_body_num[n]].second = new_val;
+    this->shift_up(vert_body_num[n]);
+}
+
+//---------------------------------------------
+//----------------------Prim-----------------------
+//---------------------------------------------
+template<class ReturnT, class EdgeT>
+ReturnT MST_PRIM(const std::vector<std::vector<
+                 std::pair<size_t, EdgeT>>> &Adj) {
+    size_t n = Adj.size();
+    MinHeap<EdgeT> Q(n);
+    ReturnT ans = 0;
+    while (!Q.empty()) {
+        auto top = Q.top();
+        ans += top.second;
+        Q.erase_min();
+        for (auto node : Adj[top.first])
+            if (Q.in_heap(node.first) && node.second < Q.key(node.first))
+                Q.decrease(node.first, node.second);
+    }
+    return ans;
+}
+
+//---------------------------------------------
+//---------------------funk------------------------
+//---------------------------------------------
+
+uint64_t funk(std::vector<std::vector<std::pair<size_t, uint64_t>>>
+              &Adj, const std::vector<uint64_t> &A) {
+    size_t n = A.size();
+    uint64_t min = A[0]; size_t minInd = 0;
+    for (size_t ind = 0; ind < n; ++ind)
+        if (min > A[ind]) {
+            min = A[ind];
+            minInd = ind;
+        }
+    for (size_t ind = 0; ind < n; ++ind) {
+        Adj[minInd].push_back({ind, min + A[ind]});
+        Adj[ind].push_back({minInd, min + A[ind]});
+    }
+    return MST_PRIM<uint64_t>(Adj);
+}
+
+int main() {
+    // input process
+    size_t n, m;
+    std::cin >> n >> m;
+    std::vector<uint64_t> A;
+    size_t u, v; uint64_t cost;
+    for (size_t cnt = 0; cnt < n; ++cnt) {
+        std::cin >> cost;
+        A.push_back(cost);
+    }
+    std::vector<std::vector<std::pair<size_t, uint64_t>>> Adj(n);
+    for (size_t cnt = 0; cnt < m; ++cnt) {
+        std::cin >> u >> v >> cost;
+        --u; --v;
+        assert(u < n && v < n);
+        Adj[u].push_back({v, cost});
+        Adj[v].push_back({u, cost});
+    }
+    // algorithm
+    uint64_t ans = funk(Adj, A);
+    // output process
+    std::cout << ans;
+}
