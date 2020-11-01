@@ -1,0 +1,64 @@
+/* 5_4 Очень быстрая сортировка
+Имеется рекуррентная последовательность A1, A2, ..., AN, строящаяся по следующему правилу: 
+A1 = K
+Ai+1 = (Ai * M) % (2^32-1) % L
+Требуется найти сумму всех нечётных по порядку элементов в отсортированной по неубыванию последовательности по модулю L.
+
+Формат ввода: N K M L
+Для входных данных
+5 7 13 100
+последовательность будет такой:
+(7, 7*13%100=91, 91*13%100=83, 83*13%100=79, 79*13%100=27), то есть, (7, 91, 83, 79, 27)
+Отсортированная последовательность
+(7, 27, 79, 83, 91)
+Сумма элементов на нечётных местах = (7 + 79 + 91) mod 100 = 77
+Для представления элементов последовательности необходимо использовать тип данных unsigned int.
+Указание
+Для получения массива используйте цикл 
+    a[0] = K;
+    for (int i = 0; i < N-1; i++)
+        a[i+1] = (unsigned int)((a[i]*(unsigned long long)M)&0xFFFFFFFFU)modL;
+In  5 7 13 100
+Out 77 */
+#include<iostream>
+#include<vector>
+
+using UI = unsigned int;
+using ULLI = unsigned long long;
+template<class T>
+void count_sort(std::vector<T> &vec, int i, int N) {
+    unsigned count_size = 1 << N;
+    std::vector<int> counter(count_size, 0);
+    std::vector<T> sort_vec(vec.size());
+    for (auto t : vec)
+        ++counter[t >> (i * N) & (count_size - 1)]; 
+    for (int j = 1; j < count_size; ++j)
+        counter[j] += counter[j - 1];
+    for (int j = vec.size() - 1; j >= 0; --j)
+        sort_vec[--counter[vec[j] >> (i * N) & (count_size - 1)]] = vec[j];
+    for (int j = 0; j < vec.size(); ++j)
+        vec[j] = sort_vec[j];   
+}
+template<class T>
+void radix_LSD(std::vector<T> &vec, int N) {
+    int r = (32 + N - 1) / N;
+    for (int i = 0; i < r; ++i)
+        count_sort(vec, i, N);
+}
+UI funk(UI N, UI K, ULLI M, UI L) {
+    std::vector<UI> uivec{K};
+    for (UI i = 1; i < N; ++i)
+        uivec.push_back((unsigned int)((uivec[i - 1] * (unsigned long long)M) & 0xFFFFFFFFU) % L); 
+    radix_LSD<UI>(uivec, 8);
+    UI ans = 0;
+    for (int i = 0; i < N; i += 2)
+        ans = (ans + uivec[i]) % L;
+    return ans;
+}
+int main() {
+    UI N = 0, K = 0, L = 0;
+    ULLI M = 0;
+    std::cin >> N >> K >> M >> L;    // input   
+    UI ans = funk(N, K, M, L);
+   std::cout << ans;                 // output
+}

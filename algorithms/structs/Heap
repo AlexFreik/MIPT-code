@@ -1,0 +1,38 @@
+template<class T>
+class MaxHeap {
+ public:
+    MaxHeap(std::vector<T> &v, bool (*greater)(const T &, const T &)) :
+    vec(v), greater(greater), size(v.size()) {
+        for (int i = size - 1; i >= 0; --i)
+            sift_down(i);
+    }
+    bool (*greater)(const T &, const T &);
+    std::vector<T> &vec;
+    int size;
+    void sift_down(int n) {
+        while (2 * n + 1 < size) {
+            if (2 * n + 2 < size) {
+                int i = greater(vec[2 * n + 1], vec[2 * n + 2]) ? 0 : 1;
+                if (is_greater(vec[2 * n + 1 + i], vec[n])) {
+                    T temp = vec[n];
+                    vec[n] = vec[2 * n + 1 + i];
+                    vec[2 * n + 1 + i] = temp;
+                    n = 2 * n + 1 + i;
+                } else { break; }
+            } else {
+                if (greater(vec[2 * n + 1], vec[n])) {
+                    T temp = vec[n];
+                    vec[n] = vec[2 * n + 1];
+                    vec[2 * n + 1] = temp;
+                    n = 2 * n + 1;
+                } else {break;}
+            }
+        }
+    }
+    T erase_max() {
+        T max = vec[0];
+        vec[0] = vec[--size];
+        sift_down(0);
+        return max;
+    }
+};

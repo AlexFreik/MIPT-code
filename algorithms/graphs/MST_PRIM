@@ -1,0 +1,141 @@
+template<class T, class Compare = std::less<T>>
+class MinHeap {
+    // heap body vector with keys
+    std::vector<std::pair<size_t, T>> body;
+    // in n-number cell is number of key of n-number vert in body
+    // vertex numerate from zero
+    std::vector<size_t> vert_body_num;
+    Compare lesser = Compare();
+    void shift_down(size_t);
+    void shift_up(size_t);
+
+ public:
+    MinHeap(size_t, Compare is_lesser = Compare());
+    size_t size() const { return this->body.size(); }  //
+    bool empty() const { return this->body.empty(); }  //
+    std::pair<size_t, T> top() const;
+    T key(size_t n) const;
+    bool in_heap(size_t) const;
+    void erase_min();
+    void decrease(size_t, const T&);
+};
+//------------constructors----------
+template<class T, class Compare>
+MinHeap<T, Compare>::MinHeap(size_t N, Compare is_lesser) : lesser(is_lesser) {
+    T inf = static_cast<T>(0) - 1;
+    // type T must be unsigned
+    assert(inf > 0 && N > 0);
+    for (size_t ind = 0; ind < N; ind++) {
+        this->body.push_back({ind, inf});
+        this->vert_body_num.push_back(ind);
+    }
+    this->body[0] = {0, 0};
+}
+//-------------------private methods---------
+template<class T, class Compare>
+void MinHeap<T, Compare>::shift_up(size_t num) {
+    // shift up the element in heap vector with number n (from zero)
+    assert(num < this->size());
+    // number of n vert in body vec
+    for (size_t new_num = (num - 1) / 2; num > 0;
+         num = new_num, (new_num -= 1) /= 2) {
+        // if child is lesser than father
+        if (lesser(this->body[num].second, this->body[new_num].second)) {
+            // change numbers of heap nodes in vert_body_num vec
+            std::swap(vert_body_num[this->body[num].first],
+                 vert_body_num[this->body[new_num].first]);
+            // swap nodes in body
+            std::swap(body[num], body[new_num]);
+        } else {
+            break;
+        }
+    }
+}
+template<class T, class Compare>
+void MinHeap<T, Compare>::shift_down(size_t num) {
+    // shift down the element in heap vector with number n (from zero)
+    assert(num < this->size());
+    while (2 * num + 2 < this->size()) {
+        size_t new_num = 2 * num +
+        (lesser(body[2 * num + 1].second, body[2 * num + 2].second) ? 1 : 2);
+        // if child is lesser than father
+        if (lesser(this->body[new_num].second, this->body[num].second)) {
+            // change numbers of heap nodes in vert_body_num vec
+            std::swap(vert_body_num[this->body[num].first],
+                 vert_body_num[this->body[new_num].first]);
+            // swap nodes in body
+            std::swap(body[num], body[new_num]);
+            num = new_num;
+        } else {
+            break;
+        }
+    }
+    if (2 * num + 2 == this->size()) {
+        size_t new_num = 2 * num + 1;
+        // if child is lesser than father
+        if (lesser(this->body[new_num].second, this->body[num].second)) {
+            // change numbers of heap nodes in vert_body_num vec
+            std::swap(vert_body_num[this->body[num].first],
+                 vert_body_num[this->body[new_num].first]);
+            // swap nodes in body
+            std::swap(body[num], body[new_num]);
+        }
+    }
+}
+//-------------publick methods-----------------
+template<class T, class Compare>
+void MinHeap<T, Compare>::erase_min() {
+    assert(!body.empty());
+    if (this->body.size() == 1) {
+        this->body.pop_back();
+        return;
+    }
+    // change numbers of heap nodes in vert_body_num vec
+    std::swap(vert_body_num[this->body.cbegin()->first],
+              vert_body_num[this->body.crbegin()->first]);
+    // swap nodes in body
+    std::swap(this->body[0], this->body[this->size() - 1]);
+    this->body.pop_back();
+    this->shift_down(0);
+}
+template<class T, class Compare>
+std::pair<size_t, T> MinHeap<T, Compare>::top() const {
+    assert(!this->body.empty());
+    return this->body[0];
+}
+template<class T, class Compare>
+T MinHeap<T, Compare>::key(size_t n) const {
+    assert(n < this->vert_body_num.size() &&
+           this->vert_body_num[n] < this->body.size());
+    return this->body[this->vert_body_num[n]].second;
+}
+template<class T, class Compare>
+bool MinHeap<T, Compare>::in_heap(size_t n) const {
+    assert(n < this->vert_body_num.size());
+    return this->vert_body_num[n] < this->body.size();
+}
+template<class T, class Compare>
+void MinHeap<T, Compare>::decrease(size_t n, const T& new_val) {
+    assert(n < this->vert_body_num.size() &&
+           this->vert_body_num[n] < this->body.size());
+    this->body[vert_body_num[n]].second = new_val;
+    this->shift_up(vert_body_num[n]);
+}
+
+//---------------------------------------------
+//----------------------Prim-----------------------
+//---------------------------------------------
+uint32_t MST_PRIM(size_t n,
+                  std::vector<std::vector<std::pair<size_t, uint32_t>>> &Adj) {
+    MinHeap<uint32_t> Q(n);
+    uint32_t ans = 0;
+    while (!Q.empty()) {
+        auto top = Q.top();
+        ans += top.second;
+        Q.erase_min();
+        for (auto node : Adj[top.first])
+            if (Q.in_heap(node.first) && node.second < Q.key(node.first))
+                Q.decrease(node.first, node.second);
+    }
+    return ans;
+}

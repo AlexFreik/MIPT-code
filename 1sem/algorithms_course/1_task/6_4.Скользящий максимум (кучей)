@@ -1,0 +1,85 @@
+/*Дан массив целых чисел A[0..n), n не превосходит 100 000. 
+Так же задан размер некотрого окна (последовательно расположенных элементов массива)
+в этом массиве k, k<=n. Требуется для каждого положения окна (от 0 и до n-k) 
+вывести значение максимума в окне. Скорость работы O(n log n), память O(n).*/
+
+#include <iostream>
+#include <vector>
+
+using VIIt = std::vector<int>::iterator;
+using VIcIt = std::vector<int>::const_iterator;
+void swap(std::vector<VIcIt>::iterator it1, std::vector<VIcIt>::iterator it2) {
+    auto it = *it1;
+    *it1 = *it2;
+    *it2 = it;
+}
+class Hip_max {
+ public:
+    explicit Hip_max(const VIcIt beg) : it_body {beg} {}
+    VIcIt max() {
+        return it_body[1];
+    }
+    void push_back(VIcIt it_of_el) {
+        this->it_body.push_back(it_of_el);
+        auto it_new_it_of_el = this->it_body.end() - 1;
+        while (it_new_it_of_el != this->it_body.begin() + 1 &&
+            *this->it_body[(it_new_it_of_el - it_body.begin()) / 2] <=
+                **it_new_it_of_el) {
+            auto parant = it_body.begin() +
+                (it_new_it_of_el - this->it_body.begin()) / 2;
+            swap(it_new_it_of_el, parant);
+            it_new_it_of_el = parant;
+        }
+    }
+    void erase_max() {
+        auto it_body_it = it_body.begin() + 1;
+        *it_body_it = *(it_body.end() - 1);
+        it_body.pop_back();
+        auto it_next_max = it_body_it;  // down el
+        while ((it_body_it - it_body.begin()) * 2 < it_body.size()) {
+            if ((it_body_it - it_body.begin()) * 2 + 1 < it_body.size()) {
+                it_next_max = **(it_body_it + (it_body_it - it_body.begin())) >
+                    **(it_body_it + (it_body_it - it_body.begin()) + 1) ?
+                    it_body_it + (it_body_it - it_body.begin()) :
+                    it_body_it + (it_body_it - it_body.begin()) + 1;
+                swap(it_body_it, it_next_max);
+            } else {
+                it_next_max = it_body_it + (it_body_it - it_body.begin());
+                swap(it_body_it, it_next_max);
+            }
+            it_body_it = it_next_max;
+        }
+    }
+ private:
+    VIcIt data_beg;
+    std::vector<VIcIt> it_body;
+};
+
+void maxInMirror(const std::vector<int> &data, std::vector<int> &ans,
+                                                        const int k) {
+    Hip_max kHip(data.begin());
+    for (VIcIt it = data.begin(); it - data.begin() != k; ++it)
+        kHip.push_back(it);
+    for (VIcIt it = data.begin() + k; it != data.end(); ++it) {
+        ans.push_back(*kHip.max());
+        kHip.push_back(it);
+        while (kHip.max() - it > 0 || kHip.max() - it <= -k)
+            kHip.erase_max();
+    }
+    ans.push_back(*kHip.max());
+}
+int main() {
+    std::ios::sync_with_stdio(false);
+    int n, k;
+    std::cin >> n;
+    std::vector<int> data(n);
+    for (auto &i : data)             // data input
+        std::cin >> i;
+    std::cin >> k;
+    if (k != 0) {
+        std::vector<int> ans;
+        maxInMirror(data, ans, k);
+        for (auto i : ans)
+        std::cout << i << " ";
+    }
+}

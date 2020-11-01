@@ -1,0 +1,179 @@
+template<typename T>
+class DecTree {
+private:
+    struct node {
+        T value;
+        T prior;
+        node *left = nullptr;
+        node *right = nullptr;
+        explicit node(T const &val, T const &prior)
+                                    : value(val), prior(prior) {}
+        void print(int level) const {
+            if (this == nullptr) return;
+            right->print(level+1);
+            for (int i = 0; i < level; i++) std::cout << "  ";
+            std::cout << value << ";" << prior <<  std::endl;
+            left->print(level+1);
+        }
+    } *root = nullptr;
+    bool (*comp)(T, T);
+public:
+    DecTree(bool (*islesser)(T, T)) : comp(islesser) {}
+    ~DecTree() {
+        if (root == nullptr) return;
+        std::stack<node *> Nodevec;
+        Nodevec.push(root);
+        for (bool key = false; Nodevec.size();) {
+            if (key) {
+                if (Nodevec.top()->right != nullptr) {
+                    auto temp = Nodevec.top();
+                    Nodevec.pop();
+                    Nodevec.push(temp->right);
+                    delete temp;
+                    key = false;
+                } else {
+                    delete Nodevec.top();
+                    Nodevec.pop();
+                }
+            } else if (Nodevec.top()->left != nullptr) {
+                Nodevec.push(Nodevec.top()->left);
+            } else {
+                auto temp = Nodevec.top();
+                Nodevec.pop();
+                if (temp->right != nullptr)
+                    Nodevec.push(temp->right);
+                else
+                    key = true;
+                delete temp;
+            }
+        }
+    }
+    void insert2(T x, T y) {
+        if (root == nullptr) {
+            root = new node(x, y);
+            return;
+        }
+        node* par = nullptr;
+        auto curr = root;
+        while (curr != nullptr && comp(y, curr->prior)) {
+            par = curr;
+            if (comp(par->value, x))
+                curr = par->right;
+            else
+                curr = par->left;
+        }
+        auto pair = split(curr, x);
+        node *temp = new node(x, y);
+        if (pair.first == nullptr)
+            temp->left = nullptr, temp->right = nullptr;
+        else if (pair.second == nullptr)
+            comp(pair.first->value, x) ? temp->left = pair.first
+                                        : temp->right = pair.first;
+        else
+            temp->left = pair.first, temp->right = pair.second;
+        if (par == nullptr)
+            root = temp;
+        else if (comp(x, par->value))
+            par->left = temp;
+        else
+            par->right = temp;
+    }
+    std::pair<node*, node*> split(node* tree, T x) {   // return two roots
+        if (tree == nullptr) return {nullptr, nullptr};  //  all elements
+        node* par = nullptr;        // in first lesser then in second
+        auto curr = tree;           // if tree == nullptr return two nullptr
+        std::stack<node *> Nodevec;  // if only one of two == nullptr it's
+        if (comp(curr->value, x) || comp(x, curr->value)) {  // always second
+            while (curr != nullptr) {
+                par = curr;
+                if (comp(x, par->value)) {
+                    if (par->left != nullptr && comp(par->left->value, x)) {
+                        Nodevec.push(par);
+                        Nodevec.push(par->left);
+                    } else if (par->left != nullptr &&
+                            !(comp(curr->left->value, x) ||
+                                comp(x, curr->left->value))) {
+                        Nodevec.push(par->left);
+                        Nodevec.push(par->left->left);
+                        break;
+                    }
+                    curr = par->left;
+                } else if (comp(par->value, x)) {
+                    if (par->right != nullptr && comp(x, par->right->value)) {
+                        Nodevec.push(par);
+                        Nodevec.push(par->right);
+                    } else if (par->right != nullptr &&
+                               !(comp(curr->right->value, x)
+                                    || comp(x, curr->right->value))) {
+                        Nodevec.push(par);
+                        Nodevec.push(par->right);
+                        Nodevec.push(par->right);
+                        Nodevec.push(par->right->left);
+                        break;
+                    }
+                    curr = par->right;
+                }
+            }
+        } else {
+            node* temp = tree->left;
+            tree->left = nullptr;
+            return {temp, tree};
+        }
+        if (!Nodevec.size()) {
+            return {tree, nullptr};
+        }
+        if (Nodevec.size() == 2) {
+            node* n0 = Nodevec.top(); Nodevec.pop();
+            if (n0 == nullptr) return {tree, n0};
+            if (comp(Nodevec.top()->value, x)) {
+                Nodevec.top()->right = nullptr;
+                return {tree, n0};
+            }
+            Nodevec.top()->left = nullptr;
+            return {n0, tree};
+        }
+        node* n4 = Nodevec.top(); Nodevec.pop();
+        node* n3 = Nodevec.top(); Nodevec.pop();
+        node* n2 = Nodevec.top(); Nodevec.pop();
+        node* n1 = Nodevec.top(); Nodevec.pop();
+        (n1->left == n2) ? (n3->right = nullptr) : (n3->left = nullptr),
+                    (n1->left == n2) ? (n1->left = n4) : (n1->right = n4);
+        while (Nodevec.size() >= 2) {
+            n4 = n2, n3 = n1;
+            n2 = Nodevec.top(); Nodevec.pop();
+            n1 = Nodevec.top(); Nodevec.pop();
+            (n1->left == n2) ? (n1->left = n4) : (n1->right = n4);
+        }
+        if (comp(n1->value, n2->value))
+            return {tree, n2};
+        return {n2, tree};
+    }
+    int max_thin() {
+        int max = (root != nullptr);
+        std::stack<node*> stack1;
+        std::stack<node*> stack2;
+        stack1.push(root);
+        while (!stack1.empty() || !stack2.empty()) {
+            while (!stack1.empty()) {
+                if (stack1.top()->left != nullptr)
+                    stack2.push(stack1.top()->left);
+                if (stack1.top()->right != nullptr)
+                    stack2.push(stack1.top()->right);
+                stack1.pop();
+            }
+            if (stack2.size() > max) max = stack2.size();
+            while (!stack2.empty()) {
+                if (stack2.top()->left != nullptr)
+                    stack1.push(stack2.top()->left);
+                if (stack2.top()->right != nullptr)
+                    stack1.push(stack2.top()->right);
+                stack2.pop();
+            }
+            if (stack1.size() > max) max = stack1.size();
+        }
+        return max;
+    }
+    void print() const {
+        root->print(0);
+    }
+};

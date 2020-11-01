@@ -1,0 +1,56 @@
+/*В базе данных хранится N записей, вида (Name, a1, a2, … , ak)
+ — во всех записях одинаковое число параметров. На вход задачи
+ подаётся приоритет полей — перестановка на числах 1,...,k —
+ записи нужно вывести в соответствии с этим приоритетом. В случае,
+ если приоритет полей таков: 3 4 2 1, то это следует воспринимать так:
+ надо читать как: приоритет значений из 3 колонки самый высокий,
+ приоритет значений из колонки 4 ниже, приоритет значений из колонки
+ 2 ещё ниже, а приоритет значений из колонки 1 самый низкий.*/
+#include<iostream>
+#include<vector>
+#include<string>
+
+using cv = const std::vector<int>;
+bool is_greater(cv &a, cv &b, cv &prior) {
+    for (auto i : prior) {
+        if (a[i] < b[i])
+            return true;
+        if (a[i] > b[i])
+            return false;
+    }
+    return false;
+}
+
+template<class T>
+void Insertion_sort(std::vector<T> &arr, bool
+                    (*grater)(const T &, const T &, const T &), cv &prior) {
+    for (int i = 1; i < arr.size(); ++i) {
+        auto temp = arr[i];
+        int j = i - 1;
+        for (; j >= 0 && grater(arr[j], temp, prior); --j) {
+            arr[j + 1] = arr[j];
+        }
+        arr[j + 1] = temp;
+    }
+}
+
+int main() {
+    int N = 0, k = 0;
+    std::cin >> N >> k;
+    std::vector<int> prior(k);
+    for (auto &i : prior)
+        std::cin >> i;
+    std::vector<std::string> names(N);
+    std::vector<std::vector<int>> perm(N);
+    for (int j = 0; j < N; ++j) {
+        std::cin >> names[j];
+        perm[j].push_back(j);
+        for (int i = 0, temp; i < k; ++i) {
+            std::cin >> temp;
+            perm[j].push_back(temp);
+        }
+    }
+    Insertion_sort<std::vector<int>>(perm, is_greater, prior);
+    for (auto vi : perm)
+        std::cout << names[vi[0]] << std::endl;
+}

@@ -1,0 +1,47 @@
+#include <queue>
+
+template<class T, class DistT>
+bool Relax_stl_priority_queue(size_t parent, size_t child, T edge_weight,
+                              std::vector<DistT> &distances) {
+    // true if the function worked
+    if (distances[child] > distances[parent] + edge_weight) {
+        distances[child] = distances[parent] + edge_weight;
+        return true;
+    }
+    return false;
+}
+template<class T, class DistT>
+void DIJKSTRA_stl_priority_queue(size_t n, size_t root,
+                  std::vector<std::vector<std::pair<size_t, T>>> const &Adj,
+                  std::vector<DistT> &distances) {
+    assert(n > root && Adj.size() == n);
+    // DistT alweys unsigned
+    // Adj[i] is a list of pairs: vert to that i have edges and this edge val
+    typedef std::pair<size_t, DistT> P;
+    auto greater = [](const P &a, const P &b) {
+        return a.second > b.second ||
+        (a.second == b.second && a.first > b.first);
+    };
+    std::priority_queue<P, std::vector<P>, decltype(greater)> Q(greater);
+    std::vector<bool> S(n, false);
+    DistT inf = -1;
+    assert(inf > 0);
+    distances.clear();
+    distances = std::vector<DistT>(n, inf);
+    distances[root] = 0;
+    Q.push({root, 0});
+    while (!Q.empty()) {
+        P min = Q.top();
+        Q.pop();
+        // to not checking checked vert many times
+        if (S[min.first]) continue;
+        // add our min vert to set of checked vert
+        S[min.first] = true;
+        for (auto vert : Adj[min.first])
+            if (Relax_stl_priority_queue(min.first,
+                                         vert.first,
+                                         vert.second,
+                                         distances))
+                Q.push({vert.first, distances[vert.first]});
+    }
+}

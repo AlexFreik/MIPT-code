@@ -1,0 +1,103 @@
+template<typename T>
+class BST {
+public:
+    BST(bool (*lesser)(T, T)) : comp(lesser) {}
+    ~BST() {
+        if (root == nullptr) return;
+        std::stack<node *> Nodevec;
+        Nodevec.push(root);
+        for (bool key = false; Nodevec.size();) {
+            if (key) {
+                if (Nodevec.top()->right != nullptr) {
+                    auto temp = Nodevec.top();
+                    Nodevec.pop();
+                    Nodevec.push(temp->right);
+                    delete temp;
+                    key = false;
+                } else {
+                    delete Nodevec.top();
+                    Nodevec.pop();
+                }
+            } else if (Nodevec.top()->left != nullptr) {
+                Nodevec.push(Nodevec.top()->left);
+            } else {
+                auto temp = Nodevec.top();
+                Nodevec.pop();
+                if (temp->right != nullptr)
+                    Nodevec.push(temp->right);
+                else
+                    key = true;
+                delete temp;
+            }
+        }
+    }
+    bool empty() const {
+        return root == nullptr;
+    }
+    bool insert(T const &val) {
+        if (empty()) {
+            root = new node(val);
+            return true;
+        }
+        auto curr = root;
+        auto par = root;
+        bool isleft = true;
+        while (curr != nullptr) {
+            par = curr;
+            if (comp(val, curr->value)) {
+                curr = curr->left;
+                isleft = true;
+            } else {
+                curr = curr->right;
+                isleft = false;
+            }
+        }
+        if (isleft) par->left  = new node(val);
+        else        par->right = new node(val);
+        return true;
+    }
+    void print() const {
+        root->print(0);
+    }
+private:
+    struct node {
+        T value;
+        node *left = nullptr;
+        node *right = nullptr;
+        explicit node(T const &val) : value(val) {}
+        void print(int level) const {
+            if (this == nullptr) return;
+            right->print(level+1);
+            for (int i = 0; i < level; i++) std::cout << "  ";
+            std::cout << value <<  std::endl;
+            left->print(level+1);
+        }
+    } *root = nullptr;
+    bool (*comp)(T, T);
+public:
+    int max_thin() {
+        int max = (root != nullptr);
+        std::stack<node*> stack1;
+        std::stack<node*> stack2;
+        stack1.push(root);
+        while (!stack1.empty() || !stack2.empty()) {
+            while (!stack1.empty()) {
+                if (stack1.top()->left != nullptr)
+                    stack2.push(stack1.top()->left);
+                if (stack1.top()->right != nullptr)
+                    stack2.push(stack1.top()->right);
+                stack1.pop();
+            }
+            if (stack2.size() > max) max = stack2.size();
+            while (!stack2.empty()) {
+                if (stack2.top()->left != nullptr)
+                    stack1.push(stack2.top()->left);
+                if (stack2.top()->right != nullptr)
+                    stack1.push(stack2.top()->right);
+                stack2.pop();
+            }
+            if (stack1.size() > max) max = stack1.size();
+        }
+        return max;
+    }
+};

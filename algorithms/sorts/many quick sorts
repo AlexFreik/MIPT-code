@@ -1,0 +1,169 @@
+int randomized_partion(std::vector<T> &vec, int left, int right) {
+    if (right == left) return left;
+    int key = rand() % (right - left + 1) + left;
+    std::swap(vec[left], vec[key]);
+    int i = right + 1;
+    for (int j = right; j > left; --j) {
+        if (vec[j] > vec[left]) {
+            --i;
+            std::swap(vec[j], vec[i]);
+        }
+    }
+    std::swap(vec[left], vec[--i]);
+    return i;
+}
+template<class T>
+int randomized_select(std::vector<T> &vec, int left, int right, int k) {
+    if (left == right)
+        return vec[left];
+    int wall = randomized_partion(vec, left, right);
+    int key = wall - left;
+    if (key == k)
+        return vec[wall];
+    if (k < key)
+         return randomized_select(vec, left, wall - 1, k);
+    return randomized_select(vec, wall + 1, right, k - key - 1);
+}
+template<class T, class Iterator>
+Iterator partion(Iterator left, Iterator right,
+                       bool greater(const T &, const T &)) {
+    if (right == left) return left;
+    auto i = right + 1;
+    for (auto j = right; j > left; --j) {
+        if (greater(*j, *left)) {
+            --i;
+            std::swap(*j, *i);
+        }
+    }
+    std::swap(*left, *(--i));
+    return i;
+    
+}
+template<class T, class Iterator>
+Iterator randomized_partion(Iterator left, Iterator right,
+                            bool greater(const T &, const T &)) {
+    if (right == left) return left;
+    auto key = rand() % (right - left + 1) + left;
+    std::swap(*left, *key);
+    return partion(left, right, greater);
+}
+template<class T, class Iterator>
+std::pair<Iterator, Iterator> optimized_partion(Iterator left, Iterator right,
+                       bool greater(const T &, const T &)) {
+    if (right == left) return {left, right};
+    auto i = right + 1;
+    for (auto j = right; j > left; --j) {
+        if (greater(*j, *left)) {
+            --i;
+            std::swap(*j, *i);
+        }
+    }
+    std::swap(*left, *(--i));
+    auto it2 = i;
+    for (auto j = it2 - 1; j >= left; --j)
+    {
+        if (!greater(*it2, *j)) {
+            --i;
+            std::swap(*j, *i);
+        }
+    }
+    return {i, it2};
+}
+template<class T, class Iterator>
+void Insertion_sort(Iterator &beg, Iterator &end, bool
+                    (*grater)(const T &, const T &)) {
+    if(beg == end) return;
+    for (auto it = beg + 1; it != end; ++it) {
+        auto temp = *it;
+        auto jt = it;
+        for (; jt > beg && grater(*(jt - 1), temp); --jt)
+            *(jt) = *(jt - 1);
+        *jt = temp;
+    }
+}
+template<class T, class Iterator>
+void quickq_sort(Iterator beg, Iterator end,
+                            bool greater(const T &, const T &)) {
+    if (end - beg < 2) return;
+    auto pivot = partion(beg, end - 1 , greater);
+    quickq_sort(beg, pivot, greater);
+    quickq_sort(pivot + 1, end, greater);
+}
+template<class T, class Iterator>
+void rand_quickq_sort(Iterator beg, Iterator end,
+                            bool greater(const T &, const T &)) {
+    if (end - beg < 2) return;
+    auto pivot = randomized_partion(beg, end - 1 , greater);
+    rand_quickq_sort(beg, pivot, greater);
+    rand_quickq_sort(pivot + 1, end, greater);
+}
+template<class T, class Iterator>
+void quickq_sort_with_optimized_partion(Iterator beg, Iterator end,
+                            bool greater(const T &, const T &)) {
+    if (beg ==  end) return;
+    auto temp = optimized_partion(beg, end - 1 , greater);
+    quickq_sort_with_optimized_partion(beg, temp.first, greater);
+    quickq_sort_with_optimized_partion(temp.second + 1, end, greater);
+}
+template<class T, class Iterator>
+void quickq_sort_with_one_rec(Iterator beg, Iterator end,
+                            bool greater(const T &, const T &)) {
+    if (end - beg < 2) return;
+    auto pivot = partion(beg, end - 1 , greater);
+    quickq_sort_with_one_rec(beg, pivot, greater);
+    
+    std::vector<std::pair<Iterator, Iterator>> pvec{{pivot + 1, end}};
+    std::vector<std::pair<Iterator, Iterator>> pvec2;
+    for (bool key = true; key;) {
+        key = false;
+        for(auto it = pvec.begin(); it != pvec.end(); ++it)
+            if((*it).second - (*it).first > 2) {
+                auto piv2 = partion((*it).first, (*it).second - 1, greater);
+                pvec2.push_back({piv2 + 1, (*it).second});
+                (*it).second = piv2;
+                key = true;
+            }
+        for(auto it = pvec2.begin(); it != pvec2.end(); ++it)
+        if((*it).second - (*it).first > 2) {
+            auto piv2 = partion((*it).first, (*it).second - 1, greater);
+            pvec.push_back({piv2 + 1, (*it).second});
+            (*it).second = piv2;
+            key = true;
+        }
+    }
+}
+template<class T, class Iterator>
+void quickq_sort_with_no_rec(Iterator beg, Iterator end,
+                            bool greater(const T &, const T &)) {
+    std::vector<std::pair<Iterator, Iterator>> pvec{{beg, end}};
+    std::vector<std::pair<Iterator, Iterator>> pvec2;
+    for (bool key = true; key;) {
+        key = false;
+        for(auto it = pvec.begin(); it != pvec.end(); ++it)
+            if((*it).second - (*it).first > 2) {
+                auto piv2 = partion((*it).first, (*it).second - 1, greater);
+                pvec2.push_back({piv2 + 1, (*it).second});
+                (*it).second = piv2;
+                key = true;
+            }
+        for(auto it = pvec2.begin(); it != pvec2.end(); ++it)
+        if((*it).second - (*it).first > 2) {
+            auto piv2 = partion((*it).first, (*it).second - 1, greater);
+            pvec.push_back({piv2 + 1, (*it).second});
+            (*it).second = piv2;
+            key = true;
+        }
+    }
+}
+template<class T, class Iterator>
+void quickq_sort_no_end_rec(Iterator beg, Iterator end,
+                            bool greater(const T &, const T &)) {
+    if (end - beg < 2) return;
+    if (end - beg > 6) {
+        auto pivot = partion(beg, end - 1 , greater);
+        quickq_sort_no_end_rec(beg, pivot, greater);
+        quickq_sort_no_end_rec(pivot + 1, end, greater);
+    } else {
+        Insertion_sort(beg, end, greater);
+    }
+}

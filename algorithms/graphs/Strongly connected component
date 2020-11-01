@@ -1,0 +1,90 @@
+#include<vector>
+#include<iostream>
+#include<cassert>
+#include<set>
+using namespace std;
+
+class Graph {
+using VP = vector<pair<int, int>>;
+using VI = vector<int>;
+private:
+    vector<set<int>> adj;
+    vector<set<int>> invert_adj;
+    VP times;
+    int time;
+    VI colors;  // 0 - white, 1 - grey, 2 - black
+    void dfs(int s) { // s is white adj
+        assert(colors[s] == 0);
+        colors[s] = 1;
+        for (auto u : adj[s])
+            if (colors[u] == 0) {
+                dfs(u);
+            }
+        colors[s] = 2;
+        ++time;
+        times.push_back({s, time});
+    }
+    void dfs_2(int s) { // s is white adj
+        assert(colors[s] == 0);
+        colors[s] = 1;
+        for (auto u : invert_adj[s])
+            if (colors[u] == 0) {
+                dfs_2(u);
+            }
+        colors[s] = 2;
+        std::cout << s << " ";
+    }
+public:
+    Graph() = default;
+    void add(int adj1, int adj2) {
+        if( max(adj1, adj2) + 1 > adj.size())
+            adj.resize(max(adj1, adj2) + 1), invert_adj.resize(max(adj1, adj2) + 1);
+        adj[adj1].insert(adj2);
+        invert_adj[adj2].insert(adj1);
+    }
+    void DFS() {
+        time = 0;
+        times.resize(adj.size());
+        colors.clear();
+        times.clear();
+        colors.resize(adj.size(), 0);
+        for (int i = 0; i < adj.size(); ++i)
+            if (colors[i] == 0)
+                dfs(i);
+    }
+    void DFS_in_time_desc_order() {
+        times.resize(invert_adj.size());
+        colors.clear();
+        colors.resize(adj.size(), 0);
+        for (int i = invert_adj.size() - 1; i >= 0; --i)
+            if (colors[times[i].first] == 0) {
+                dfs_2(times[i].first);
+                cout << std::endl;
+            }
+    }
+    void funk() {
+        DFS();
+        DFS_in_time_desc_order();
+    }
+};
+
+int main() {
+    int adj1, adj2;
+    Graph gr;
+    while (cin >> adj1 && cin >> adj2)
+        gr.add(adj1, adj2);
+    gr.funk();
+}
+/*
+
+ 0 1
+ 1 2
+ 2 0
+ 3 4
+ 4 5
+ 5 6
+ 6 3
+ 7 8
+ 8 7
+ 7 1
+ */

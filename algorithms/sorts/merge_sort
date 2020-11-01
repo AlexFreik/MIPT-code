@@ -1,0 +1,36 @@
+template<class Type, class Iterator>
+void merge(Iterator beg1, Iterator end1, Iterator beg2, Iterator end2,
+           bool (*greater)(const Type &, const Type &)) {
+    std::vector<Type> merge_vec;
+    auto left1(beg1), left2(beg2);
+    while (left1 != end1 && left2 != end2) {
+        if (greater(*left1, *left2)) {
+            merge_vec.push_back(*left2);
+            ++left2;
+        } else {
+            merge_vec.push_back(*left1);
+            ++left1;
+        }
+    }
+    for (; left1 != end1; ++left1)
+        merge_vec.push_back(*left1);
+    for (; left2 != end2; ++left2)
+        merge_vec.push_back(*left2);
+    auto merge_it = merge_vec.begin();
+    for (left1 = beg1; left1 != end1; ++left1, ++merge_it)
+        *left1 = *merge_it;
+    for (left2 = beg2; left2 != end2; ++left2, ++merge_it)
+        *left2 = *merge_it;
+}
+template<class Type, class Iterator>
+int64_t merge_sort(Iterator beg, Iterator end,
+                   bool (*greater)(const Type &, const Type &)) {
+    static int64_t inversion = 0;
+    if (end - beg < 2)
+        return inversion;
+    auto median = (end - beg - 1) / 2 + beg;
+    merge_sort(beg, median + 1, greater);
+    merge_sort(median + 1, end, greater);
+    merge<Type>(beg, median + 1, median + 1, end, greater);
+    return inversion;
+}

@@ -1,0 +1,41 @@
+/* Дан массив целых чисел А[0..n-1]. Известно, что на интервале [0, m]
+ значения массива строго возрастают, а на интервале [m, n-1] строго убывают.
+ Найти m за O( log m ). 2 ≤ n ≤ 10000.*/
+#include <iostream>
+#include <vector>
+
+int bin_search_2(const std::vector<int> &arr) {
+    auto beg = arr.begin();
+    int beg2 = 1;
+    for (; beg2 < arr.size(); beg2 *= 2)
+        if (*(beg + beg2) < *(beg + beg2 - 1))
+            break;
+    auto left = arr.begin() + beg2 / 2, right = arr.end() - 1;
+    if (beg2 < arr.size()){
+        left = arr.begin() + beg2 / 2, right = arr.begin() + beg2;
+    }
+    auto mid = left + (right - left) / 2;
+    while (left != right) {
+        if (right - left == 1)
+            return (*left < *right) ? right - arr.begin() : left - arr.begin();
+        if (*(mid - 1)  < *mid && *mid < *(mid + 1)) {
+            left = mid;
+            mid = left + (right - left) / 2;
+        } else if (*(mid - 1)  > *mid && *mid > *(mid + 1)) {
+            right = mid;
+            mid = left + (right - left) / 2;
+        } else
+            return mid - arr.begin();
+    }
+    return right - arr.begin();
+}
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    int n = 0;
+    std::cin >> n;
+    std::vector<int> arr(n);
+    for (auto &i : arr)
+        std::cin >> i;
+    std::cout << bin_search_2(arr);
+}

@@ -1,0 +1,120 @@
+/*Группа людей называется современниками если был такой момент,
+ когда они могли собраться вместе. Для этого в этот момент каждому
+ из них должно было уже исполниться 18 лет, но ещё не исполниться
+ 80 лет. Дан список Жизни Великих Людей. Необходимо получить максимальное
+ количество современников. В день 18летия человек уже может
+ принимать участие в собраниях, а в день 80летия и в день смерти
+ уже не может. Замечание. Человек мог не дожить до 18-летия,
+ либо умереть в день 18-летия. В этих случаях принимать
+ участие в собраниях он не мог.*/
+#include<iostream>
+#include<vector>
+
+struct Three {
+    Three(bool end, int a1, int a2, int a3) :
+    end(end), a1(a1), a2(a2), a3(a3) {}
+    bool end;
+    int a1, a2, a3;
+};
+bool is_greater(const Three &a, const Three &b);
+template<class T>
+class MaxHeap {
+ public:
+    MaxHeap(std::vector<T> &v, bool (*greater)(const T &, const T &)) :
+    vec(v), greater(greater), size(v.size()) {
+        for (int i = size - 1; i >= 0; --i)
+            sift_down(i);
+    }
+    bool (*greater)(const T &, const T &);
+    std::vector<T> &vec;
+    int size;
+    void sift_down(int n) {
+        while (2 * n + 1 < size) {
+            if (2 * n + 2 < size) {
+                int i = greater(vec[2 * n + 1], vec[2 * n + 2]) ? 0 : 1;
+                if (is_greater(vec[2 * n + 1 + i], vec[n])) {
+                    T temp = vec[n];
+                    vec[n] = vec[2 * n + 1 + i];
+                    vec[2 * n + 1 + i] = temp;
+                    n = 2 * n + 1 + i;
+                } else { break; }
+            } else {
+                if (greater(vec[2 * n + 1], vec[n])) {
+                    T temp = vec[n];
+                    vec[n] = vec[2 * n + 1];
+                    vec[2 * n + 1] = temp;
+                    n = 2 * n + 1;
+                } else {break;}
+            }
+        }
+    }
+    T erase_max() {
+        T max = vec[0];
+        vec[0] = vec[--size];
+        sift_down(0);
+        return max;
+    }
+};
+bool is_greater(const Three &a, const Three &b) {
+    if (a.a3 > b.a3)
+        return true;
+    if (a.a3 < b.a3)
+        return false;
+    if (a.a2 > b.a2)
+        return true;
+    if (a.a2 < b.a2)
+        return false;
+    if (a.a1 > b.a1)
+        return true;
+    return false;
+}
+
+template<class T>
+void Pyramid_sort(std::vector<T> &arr,
+                  bool (*greater)(const T &, const T &)) {
+    MaxHeap<T> heap(arr, greater);
+    for (int i = arr.size() - 1; i >= 0; --i) {
+        arr[i] = heap.erase_max();
+    }
+}
+template<class T>
+int solve(std::vector<T> &vec1, std::vector<T> &vec2,
+                bool (*greater)(const T &, const T &)) {
+    std::vector<Three> vec;
+    for (int i = 0; i < vec1.size(); ++i)         // input
+           if ((vec1[i].a3 + 18 < vec2[i].a3) || (vec1[i].a3 + 18 == vec2[i].a3 &&
+                    (vec1[i].a2 < vec2[i].a2 || (vec1[i].a2 == vec2[i].a2 && vec1[i].a1 < vec2[i].a1)))) {
+               vec.push_back({0, vec1[i].a1, vec1[i].a2, vec1[i].a3 + 18});
+               if ((vec1[i].a3 + 80 > vec2[i].a3) || (vec1[i].a3 + 80 == vec2[i].a3
+                    && (vec1[i].a2 > vec2[i].a2 || (vec1[i].a2 == vec2[i].a2 && vec1[i].a1 > vec2[i].a1))))
+                   vec.push_back({1, vec2[i].a1, vec2[i].a2, vec2[i].a3});
+               else
+                   vec.push_back({1, vec1[i].a1, vec1[i].a2, vec1[i].a3 + 80});
+           }
+    Pyramid_sort<Three>(vec, greater);
+    int max = 0, s = 0;
+    for (auto t : vec) {
+        if (t.end) {
+            if (max < s)
+                max = s;
+            --s;
+        } else {
+            ++s;
+        }
+    }
+    return max;
+}
+int main() {
+    int n = 0;
+    std::cin >> n;
+    std::vector<Three> vec1;
+    std::vector<Three> vec2;
+    for (int i = 0; i < n; ++i) {           // input
+        int a1, a2, a3, a11, a22, a33;
+        std::cin >> a1 >> a2 >> a3 >> a11 >> a22 >> a33;
+        vec1.push_back({0, a1, a2, a3});
+        vec2.push_back({1, a11, a22, a33});
+    }
+    int max = solve<Three>(vec1, vec2, is_greater);      // main function
+    std::cout << max;                             // output
+}

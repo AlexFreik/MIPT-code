@@ -1,0 +1,12 @@
+template<class T, class Iterator>
+void Insertion_sort(Iterator &beg, Iterator &end, bool
+                    (*grater)(const T &, const T &)) {
+    if(beg == end) return;
+    for (auto it = beg + 1; it != end; ++it) {
+        auto temp = *it;
+        auto jt = it;
+        for (; jt > beg && grater(*(jt - 1), temp); --jt)
+            *(jt) = *(jt - 1);
+        *jt = temp;
+    }
+}

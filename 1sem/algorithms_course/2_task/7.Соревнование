@@ -1,0 +1,46 @@
+/*Дан массив целых чисел в диапазоне [0..10^9]. Размер массива
+ кратен 10 и ограничен сверху значением 2.5 * 106 элементов.
+ Все значения массива являются элементами псевдо-рандомной
+ последовательности. Необходимо отсортировать элементы
+ массива за минимальное время и вывести каждый десятый
+ элемент отсортированной последовательности.
+Разрешается использовать любую сортировку, написанную
+самостоятельно.
+Сортировка обязательно должна сортировать все элементы массива.
+*/
+#include<iostream>
+
+template<class T>
+void radix_LSD(T *beg, T *end, int N) {
+    int r = (32 + N - 1) / N;
+    unsigned count_size = 1 << N;
+    auto size = end - beg;
+    T* sort_vec = new T[size];
+    T* counter = new T[count_size];
+    for (int i = 0; i < r; ++i){
+        for (int j = 0; j < count_size; ++j)
+            counter[j]  = 0;
+        for (auto ptr = beg; ptr != end; ++ptr)
+            ++counter[*ptr >> (i * N) & (count_size - 1)];
+        for (unsigned j = 1; j < count_size; ++j)
+            counter[j] += counter[j - 1];
+        for (auto ptr = end; ptr != beg; --ptr)
+            sort_vec[--counter[*(ptr - 1) >> (i * N) & (count_size - 1)]] = *(ptr - 1);
+        for (int j = 0; j < size; ++j)
+            *(beg + j) = sort_vec[j];
+    }
+    delete[] sort_vec;
+    delete[] counter;
+}
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    int* ivec = new int[25000001];
+    int vec_size = -1;
+    for (int temp; std::cin >> temp; ivec[vec_size] = temp)    // input
+        ++vec_size;
+    radix_LSD(ivec, ivec + vec_size + 1, 8);
+    for (auto i = 9; i < vec_size + 1; i += 10)
+        std::cout << ivec[i] << " ";
+    delete[] ivec;
+}

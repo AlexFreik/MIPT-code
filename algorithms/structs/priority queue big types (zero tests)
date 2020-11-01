@@ -1,0 +1,138 @@
+//
+//  Heap.h
+//  Speedwaagonnnnnnnm
+//
+//  Created by Александр Фреик on 09.04.2020.
+//  Copyright © 2020 Freik. All rights reserved.
+//
+
+#ifndef Heap_h
+#define Heap_h
+
+
+// ----------------------------------------------------------------------------
+// This heap is for big elements, there we work with references
+// If your data is small elements this heap will be less efective
+// end wil use more memory (may be in 5 times more)
+template<class T, class Compare = std::less<T>>
+class priority_queue_big_types {
+    typedef std::pair<T, size_t> HandlType1;
+    typedef std::pair<T*, size_t> HandlType2;
+    // first -- elem, second -- his number in heap_body
+    std::vector<HandlType1> input_data;
+    // vec[0] will be "minimum" of heap (after we init heap)
+    // vector is list of references on elems of input datas
+    std::vector<HandlType2> heap_body;
+    bool (*lesser)(const T &, const T &);
+    void shift_down(size_t n);  //
+    void shift_up(size_t n);  //
+
+ public:
+    priority_queue_big_types(const std::vector<T> &, Compare is_lesser = Compare());  //
+    size_t size() const;  //
+    void decrease(HandlType2& elem, const T& new_val);  //
+    void increase(HandlType2& elem, const T& new_val);  //
+    T& top() const;  //
+    void erase_max();  //
+};
+
+template<class T, class Compare>
+priority_queue_big_types<T, Compare>::priority_queue_big_types(const std::vector<T> &data, Compare is_lesser) :
+lesser(is_lesser) {
+    for (size_t i = 0; i < data.size(); ++i) input_data.push_back({data[i], i});
+    for (size_t i = 0; i < input_data.size(); ++i) heap_body.push_back({&input_data[i], i});
+    for (size_t i = this->size(); i > 0; --i)
+        shift_down(i - 1);
+}
+template<class T, class Compare>
+size_t priority_queue_big_types<T, Compare>::size() const {
+    return heap_body.size();
+}
+template<class T, class Compare>
+void priority_queue_big_types<T, Compare>::shift_down(size_t n) {
+    // shift down the element in queue vector with number n (from zero)
+    assert(n < this->size());
+    auto temp_elem = heap_body[n];
+    while (2 * n + 2 < this->size()) {
+        size_t i = lesser(*heap_body[2 * n + 1].first, *heap_body[2 * n + 2].first) ? 1 : 2;
+        if (lesser(*heap_body[2 * n + i].first, *heap_body[n].first)) {
+            // change number of heap nodes in data vector
+            input_data[n].second = 2 * n + i;
+            input_data[2 * n + i].second = n;
+            // swap references in heap_body
+            temp_elem = heap_body[n];
+            heap_body[n] = heap_body[2 * n + i];
+            heap_body[2 * n + i] = temp_elem;
+            n = 2 * n + i;
+        } else {
+            break;
+        }
+    }
+    if (2 * n + 1 < this->size())
+        if (lesser(heap_body[2 * n + 1].first, heap_body[n].first)) {
+            // change number of heap nodes in data vector
+            input_data[n].second = 2 * n + 1;
+            input_data[2 * n + 1].second = n;
+            // swap references in heap_body
+            temp_elem = heap_body[n];
+            heap_body[n] = heap_body[2 * n + 1];
+            heap_body[2 * n + 1] = temp_elem;
+            n = 2 * n + 1;
+        }
+}
+template<class T, class Compare>
+void priority_queue_big_types<T, Compare>::shift_up(size_t n) {
+    // shift up the element in queue vector with number n (from zero)
+    assert(n < this->size());
+    auto temp_elem = heap_body[n];
+    while (n > 0) {
+        if (lesser(*heap_body[n].first, *heap_body[(n - 1) / 2].first)) {
+            // change number of heap nodes in data vector
+            input_data[n].second = (n - 1) / 2;
+            input_data[(n - 1) / 2].second = n;
+            // swap references in heap_body
+            temp_elem = heap_body[n];
+            heap_body[n] = heap_body[(n - 1) / 2];
+            heap_body[(n - 1) / 2] = temp_elem;
+            (n -= 1) /= 2;
+        } else {
+            break;
+        }
+    }
+}
+template<class T, class Compare>
+void priority_queue_big_types<T, Compare>::decrease(HandlType2& elem, const T& new_val) {
+    assert(!lesser(*heap_body[n].first, new_val));
+    *elem.first = new_val;
+    shift_up(input_data[elem.second].second);
+}
+template<class T, class Compare>
+void priority_queue_big_types<T, Compare>::increase(HandlType2& elem, const T& new_val) {
+    assert(!lesser(new_val, *heap_body[n].first));
+    *elem.first = new_val;
+    shift_down(input_data[elem.second].second);
+}
+template<class T, class Compare>
+void priority_queue_big_types<T, Compare>::erase_max() {
+    // change it, remove assert for testing
+    assert(!input_data.empty());
+    if (input_data.empty()) return;
+    // put heap[last] to heap[0] and data[] of last to data of 0
+    heap_body[0].first = (--heap_body.end())->first;
+    input_data[heap_body[0].second].first =
+        input_data[(--heap_body.end())->second].first;
+    heap_body.pop_back();
+    input_data.pop_back();
+    shift_down(0);
+}
+template<class T, class Compare>
+T& priority_queue_big_types<T, Compare>::top() const {
+    // change it, remove assert for testing
+    assert(!input_data.empty());
+    if (input_data.empty()) return;
+    return *heap_body[0].first;
+}
+// ----------------------------------------------------------------------------
+
+#endif /* Heap_h */
+//bool (*greater)(const T &, const T &)

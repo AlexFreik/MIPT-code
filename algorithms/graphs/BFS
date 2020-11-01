@@ -1,0 +1,53 @@
+/* BFS сортировка которая принимает на вход вершыну s графа 
+(у которого вершины натуральные числа от 0 до n)
+и массив, в процессе выполнения, заполняя массив n числами 
+являющимися расстояниями до вершины s 
+*/
+
+class Graph {
+using VP = vector<pair<int, int>>;
+using VI = vector<int>;
+using VUI = vector<unsigned int>;
+private:
+    vector<set<int>> adj;
+    VI colors;  // 0 - white, 1 - grey, 2 - black
+public:
+    Graph() = default;
+    explicit Graph(int n) { adj.resize(n); }  // numbering of vert beg with 0
+    void add(int ver1, int ver2) {
+        if (max(ver1, ver2) + 1 > adj.size())
+            adj.resize(max(ver1, ver2) + 1);
+        adj[ver1].insert(ver2);
+        adj[ver2].insert(ver1);
+    }
+    void add_spec_num(int ver1, int ver2) {  // fix if numbering
+        --ver1;                              // of vert beg with 1
+        --ver2;
+        if (max(ver1, ver2) + 1 > adj.size())
+            adj.resize(max(ver1, ver2) + 1);
+        adj[ver1].insert(ver2);
+        adj[ver2].insert(ver1);
+    }
+    void BFS(int s, VUI &deep) {
+        assert(s < adj.size());
+        deep.clear();
+        deep.resize(adj.size(), -1);
+        colors.clear();
+        colors.resize(adj.size(), 0);
+        queue<int> que;
+        que.push(s);
+        deep[s] = 0;
+        colors[s] = 1;
+        while (!que.empty()) {
+            int u = que.front();
+            que.pop();
+            for (auto v : adj[u])
+                if (colors[v] == 0) {
+                    deep[v] = deep[u] + 1;
+                    colors[v] = 1;
+                    que.push(v);
+                }
+            colors[u] = 2;
+        }
+    }
+};

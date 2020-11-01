@@ -1,0 +1,38 @@
+/*Вычислить площадь выпуклого n-угольника, заданного координатами своих вершин. Вначале вводится количество вершин, затем последовательно целочисленные координаты всех вершин в порядке обхода по часовой стрелке.
+ 
+ n < 1000, координаты < 10000.
+ 
+ Указание. Для вычисления площади n-угольника можно посчитать сумму ориентированных площадей трапеций под каждой стороной многоугольника. */
+#include <iostream>
+#include <vector>
+
+double triangle_square(double ax, double ay, double bx, double by,
+                       double cx, double cy) {
+    double a_x = ax - bx, a_y = ay - by, c_x = cx - bx, c_y = cy - by;
+    return (a_x * c_y - a_y * c_x) / 2;
+}
+
+double n_angle_square(const std::vector<std::vector<int>> &points) {
+    double square = 0;
+    for (auto first = points.begin(), sec = points.begin() + 1,
+        third = points.begin() + 2; third != points.end(); ++sec, ++third)
+        square += triangle_square((*first)[0], (*first)[1],
+                          (*sec)[0], (*sec)[1], (*third)[0], (*third)[1]);
+    return square;
+}
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    int n;
+    std::cin >> n;
+    std::vector<std::vector<int>> points(n);
+    for (auto &arr : points) {
+        int t = 0;
+        std::cin >> t;
+        arr.push_back(t);
+        std::cin >> t;
+        arr.push_back(t);
+    }
+    const double square = n_angle_square(points);
+    std::cout << square;
+}

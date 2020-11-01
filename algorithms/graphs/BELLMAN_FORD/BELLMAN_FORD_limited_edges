@@ -1,0 +1,46 @@
+// Алгоритм для кратчайших путей в которых не более чем k ребер (из заданной вершины)
+template<class T, class DistT>
+bool Relax_limited_edges(size_t parent, size_t child, T edge_weight,
+                         std::vector<std::pair<DistT, DistT>> &distances) {
+    // true if the function worked
+    if (distances[child].second > distances[parent].first + edge_weight) {
+        distances[child].second = distances[parent].first + edge_weight;
+        return true;
+    }
+    return false;
+}
+template<class T, class DistT>
+void BELLMAN_FORD_limited_edges(std::vector
+                                <std::vector<std::pair<size_t, T>>> const &Adj,
+                                size_t root,
+                                std::vector<DistT> &distances,
+                                size_t limit) {
+    size_t n = Adj.size();
+    limit = (n < limit ? n : limit);
+    assert(n > root);
+    // DistT alweys unsigned
+    // Adj[i] is a list of pairs: vert to that i have edges and this edge val
+    // vector with minimum dist for k limit edge and for k+1 limit edje
+    DistT inf = -1;
+    assert(inf > 0);
+    std::vector<std::pair<DistT, DistT>> dists(n, {inf, inf});
+    dists[root] = {0, inf};
+    /*
+     In this algirithm for each step i of cycle
+     for every j dists[j].first is a length of minimal way
+     from root to j that contain i or lesser edges.
+     */
+    for (size_t i = 0; i < limit; ++i) {
+        for (size_t i = 0; i < n; ++i)
+            for (auto vert : Adj[i])
+                if (dists[i].first != inf)
+                    Relax_limited_edges(i, vert.first,
+                                        vert.second, dists);
+        for (auto &p : dists)
+            p.first = p.second;
+    }
+    distances.clear();
+    for (auto p : dists)
+        distances.push_back(p.first);
+}
+

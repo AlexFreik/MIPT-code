@@ -1,0 +1,157 @@
+/*Реализуйте структуру данных типа “множество строк” на основе динамической
+ хеш-таблицы с открытой адресацией.
+ Хранимые строки непустые и состоят из строчных латинских букв. Хеш-функция строки
+ должна быть реализована с помощью вычисления значения многочлена методом Горнера.
+ Начальный размер таблицы должен быть равным 8-ми. Перехеширование выполняйте при
+ добавлении элементов в случае, когда коэффициент заполнения таблицы достигает 3/4.
+ Структура данных должна поддерживать операции добавления строки в множество, удаления
+ строки из множества и проверки принадлежности данной строки множеству. 1_1. Для
+ разрешения коллизий используйте квадратичное пробирование. i-ая проба
+ g(k, i)=g(k, i-1) + i (mod m). m - степень двойки. 1_2. Для разрешения
+ коллизий используйте двойное хеширование. */
+
+#include<vector>
+#include<iostream>
+#include<string>
+#include<cassert>
+#include <utility>
+
+int gorn_hash1(const std::string &key, size_t size) {
+    int a = 29;
+    int hash = 0;
+    for (unsigned char c : key)
+        hash = (hash * a + c + 1) % size;
+    return hash;
+}
+int gorn_hash2(const std::string &key, size_t size) {
+    size--;
+    int a = 31;
+    int hash = 0;
+    for (unsigned char c : key)
+        hash = (hash * a + c + 1) % size;
+    if (size == 7 && hash % 2 == 1) hash = (1 + hash) % 7;
+    return hash + 1;
+}
+class hashtable {
+public:
+    hashtable(size_t size, int (*hash1)(const std::string &key, size_t size),
+                        int (*hash2)(const std::string &key, size_t size)) :
+                                                hash1(hash1), hash2(hash2) {
+        body.resize(size);
+    }
+    bool insert(const std::string &key) {
+        assert(key != "");
+        if ((inserted + 1) * 4 >= body.size() * 3) tabe_resize();
+        assert((inserted + 1) * 4 < body.size() * 3);
+        for (int h1 = hash1(key, body.size()), h2 = hash2(key, body.size());
+                                            ; h1 = (h1 + h2) % body.size()) {
+            assert(h2 > 0 && h2 < body.size() && h1 >=0 && h1 < body.size());
+            if (body[h1].flag == 0) {
+                body[h1].flag = 1;
+                body[h1].key = key;
+                inserted++;
+                return true;
+            }
+            if (body[h1].flag == 2) continue;
+            assert(body[h1].flag = 1);
+            if (body[h1].key == key) return false;
+        }
+        return true;
+    }
+    bool erase(const std::string &key) {
+        assert(key != "");
+        if ((deleted + 1) * 5 >= body.size()) trash_clear();
+        assert((deleted + 1) * 5 < body.size());
+        assert(inserted * 4 < body.size() * 3);
+        for (int h1 = hash1(key, body.size()), h2 = hash2(key, body.size());
+                                            ; h1 = (h1 + h2) % body.size()) {
+            assert(h2 > 0 && h2 < body.size() && h1 >=0 && h1 < body.size());
+            if (body[h1].flag == 0)  return false;
+            if (body[h1].flag == 2) continue;
+            assert(body[h1].flag = 1);
+            if (body[h1].key == key) {
+                body[h1].flag = 2;
+                inserted--;
+                deleted++;
+                return true;
+            }
+        }
+        return true;
+    }
+    bool find(const std::string &key) {
+        assert(key != "");
+        assert(deleted * 5 < body.size());
+        assert(inserted * 4 < body.size() * 3);
+        for (int h1 = hash1(key, body.size()), h2 = hash2(key, body.size());
+                                            ; h1 = (h1 + h2) % body.size()) {
+            assert(h2 > 0 && h2 < body.size() && h1 >=0 && h1 < body.size());
+            if (body[h1].flag == 0)  return false;
+            if (body[h1].flag == 2) continue;
+            assert(body[h1].flag = 1);
+            if (body[h1].key == key) return true;
+        }
+        return true;
+    }
+private:
+    struct item {
+        std::string key;
+        int flag = 0;  // 0 - emptu, 1 - busy, 2 - dell
+    };
+    std::vector<item> body;
+    size_t inserted = 0;
+    size_t deleted = 0;
+    void tabe_resize() {
+        auto it = memory_sizes.begin();
+        for (; *it <= body.size(); ++it) {}
+        std::vector<item> temp_body = body;
+        body.clear();
+        body.resize(*it);
+        inserted = 0;
+        deleted = 0;
+        for (item i : temp_body)
+            if (i.flag == 1) insert(i.key);
+    }
+    void trash_clear() {
+        std::vector<item> temp_body = body;
+        body.clear();
+        inserted = 0;
+        deleted = 0;
+        for (item i : temp_body)
+            if (i.flag == 1) insert(i.key);
+    }
+    int (*hash1)(const std::string &key, size_t size);
+    int (*hash2)(const std::string &key, size_t size);
+    std::vector<size_t> memory_sizes {17, 37, 59, 113, 223, 443,
+    883, 1759, 3511, 7019, 14033, 28057, 56101, 112199, 224363,
+    448703, 897401, 1794787, 3589571, 7179127, 14358247, 28716487,
+    57432961, 114865903, 229731787, 459463553,
+    918927083, 1837854119, 3675708217};
+};
+void funk(std::vector<std::pair<unsigned char, std::string>>
+                                    &data, std::vector<bool> &ansvec) {
+    hashtable ht(8, gorn_hash1, gorn_hash2);
+    unsigned char uc;
+    for (auto charStr : data) {
+        uc = charStr.first;
+        if (uc == '+')
+            ansvec.push_back(ht.insert(charStr.second));
+        else if (uc == '?')
+            ansvec.push_back(ht.find(charStr.second));
+        else if (uc == '-')
+            ansvec.push_back(ht.erase(charStr.second));
+    }
+}
+int main() {
+    std::string line;
+    std::vector<std::pair<unsigned char, std::string>> svec;
+    unsigned char uc;
+    while (std::cin >> uc && uc != '0' && getline(std::cin, line))
+        svec.push_back({uc, line});
+    std::vector<bool> ansvec;
+    funk(svec, ansvec);
+    for (auto b : ansvec)
+        if (b)
+            std::cout << "OK" << std::endl;
+        else
+            std::cout << "FAIL" << std::endl;
+}

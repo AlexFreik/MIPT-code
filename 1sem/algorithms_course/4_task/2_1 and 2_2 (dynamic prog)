@@ -1,0 +1,71 @@
+/*В город N приехал цирк с командой атлетов. Они хотят удивить горожан
+ города N — выстроить из своих тел башню максимальной высоты. Башня — это цепочка
+ атлетов, первый стоит на земле, второй стоит у него на плечах, третий стоит на
+ плечах у второго и т.д. Каждый атлет характеризуется силой si (kg) и массой mi (kg).
+ Сила — это максимальная масса, которую атлет способен держать у себя на плечах.
+ К сожалению ни один из атлетов не умеет программировать, так как всю жизнь они
+ занимались физической подготовкой, и у них не было времени на изучение языков
+ программирования. Помогите им, напишите программу, которая определит максимальную
+ высоту башни, которую они могут составить. Известно, что если атлет тяжелее, то он и
+ сильнее: если mi>mj, то si > sj. Атлеты равной массы могут иметь различную силу. */
+#include<vector>
+#include<iostream>
+#include<cassert>
+#include <utility>
+#include <algorithm>
+
+bool isless(const std::pair<int, int> &T1, const std::pair<int,int> &T2) {
+    return (T1.first < T2.first) || (T1.first == T2.first && T1.second < T2.second);
+}
+int funk(std::vector<std::pair<int, int>> &data) {
+    std::sort(data.begin(), data.end(), isless);
+    int sum_mass = 0, count = 0;
+    for (auto p : data)
+        if (p.second >= sum_mass) {
+            count++;
+            sum_mass += p.first;
+        }
+    return count;
+}
+int main() {
+    std::vector<std::pair<int, int>> pvec;
+    int beg, end;
+    while (std::cin >> beg >> end) {
+        pvec.push_back({beg, end});
+    }
+    std::cout << funk(pvec);
+}
+
+/*В большой IT-фирме есть только одна переговорная комната.
+ Желающие посовещаться заполняют заявки с желаемым временем
+ начала и конца. Ваша задача определить максимальное количество заявок,
+ которое может быть удовлетворено. Число заявок ≤ 100000. */
+
+#include<vector>
+#include<iostream>
+#include<cassert>
+#include <utility>
+#include <algorithm>
+
+bool isless(const std::pair<int, int> &T1, const std::pair<int,int> &T2) {
+    return T1.second < T2.second;
+}
+int funk(std::vector<std::pair<int, int>> &data) {
+    std::sort(data.begin(), data.end(), isless);
+    int curr_end = (*data.begin()).first, count = 0;  // carr
+    for (auto p : data)
+        if (p.first >= curr_end) {
+            count++;
+            curr_end = p.second;
+        }
+    return count;
+}
+int main() {
+    std::vector<std::pair<int, int>> pvec;
+    int beg, end;
+    while (std::cin >> beg >> end && end != 0) {
+        assert(beg <= end);
+        pvec.push_back({beg, end});
+    }
+    std::cout << funk(pvec);
+}

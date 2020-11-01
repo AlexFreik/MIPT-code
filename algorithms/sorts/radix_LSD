@@ -1,0 +1,23 @@
+template<class T>
+void radix_LSD(T *beg, int size) {
+    int N = 8;
+    int r = (32 + N - 1) / N;
+    unsigned count_size = 1 << N;
+    T *end = beg + size;
+    T* sort_vec = new T[size];
+    T* counter = new T[count_size];
+    for (int i = 0; i < r; ++i){
+        for (int j = 0; j < count_size; ++j)
+            counter[j]  = 0;
+        for (auto ptr = beg; ptr != end; ++ptr)
+            ++counter[*ptr >> (i * N) & (count_size - 1)];
+        for (unsigned j = 1; j < count_size; ++j)
+            counter[j] += counter[j - 1];
+        for (auto ptr = end; ptr != beg; --ptr)
+            sort_vec[--counter[*(ptr - 1) >> (i * N) & (count_size - 1)]] = *(ptr - 1);
+        for (int j = 0; j < size; ++j)
+            *(beg + j) = sort_vec[j];
+    }
+    delete[] sort_vec;
+    delete[] counter;
+}

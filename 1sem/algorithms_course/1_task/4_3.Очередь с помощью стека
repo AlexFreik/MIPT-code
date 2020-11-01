@@ -1,0 +1,64 @@
+/*Реализовать очередь с помощью двух стеков. Использовать стек,
+ реализованный с помощью динамического буфера.
+ Обрабатывать команды push back и pop front.*/
+
+#include <iostream>
+#include <vector>
+#include <utility>
+class Queue {      // implement the queue through
+    // the stack using a vector as a stack
+ public:
+    void push_back(int a) {
+        this->inbox.push_back(a);
+    }
+    int pop_front() {
+        if (this->outbox.empty())
+            while (!this->inbox.empty()) {
+                this->outbox.push_back(*(this->inbox.end() - 1));
+                this->inbox.pop_back();
+            }
+        if (this->outbox.empty()) {
+            return -1;
+        } else {
+            int p = *(this->outbox.end() - 1);
+            this->outbox.pop_back();
+            return p;
+        }
+        return 0;
+    }
+ private:
+    std::vector<int> inbox;
+    std::vector<int> outbox;
+};
+
+bool queue_test(const std::vector<std::pair<int, int>> &vpvec) {
+    bool ans = true;
+    Queue que;
+    for (int i = 0; i < vpvec.size(); i++) {
+        if (vpvec[i].first == 2) {
+            if (vpvec[i].second != que.pop_front()) {
+                ans = false;
+                break;
+            }
+        } else {
+            que.push_back(vpvec[i].second);
+        }
+    }
+    return ans;
+}
+int main() {
+    std::ios::sync_with_stdio(false);
+    int n = 0;
+    std::cin >> n;                                 // data record
+    std::vector<std::pair<int, int>> data(n);
+    for (int i = 0; i < n; ++i) {
+        int a, b;
+        std::cin >> a >> b;
+        data[i] = {a, b};
+    }
+    bool ans = queue_test(data);
+    if (ans)                                      // data output
+        std::cout << "YES";
+    else
+        std::cout << "NO";
+}

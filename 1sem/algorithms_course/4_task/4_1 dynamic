@@ -1,0 +1,103 @@
+/*Дано невзвешенное дерево. Расстоянием между двумя вершинами будем называть количество
+ребер в пути, соединяющем эти две вершины. Для каждой вершины определите расстояние до
+самой удаленной от нее вершины. */
+#include<iostream>
+#include<vector>
+#include<cassert>
+#include <utility>
+
+int max(int a, int b) {
+    if (a < b) return b;
+    return a;
+}
+struct Node {
+    int deep = 0, maxToChildLength = 0, maxUpLength = 0;
+    std::vector<int> child;
+};
+void funk(const std::vector<std::pair<int, int>> &data,
+                                                std::vector<int> &ansvec, int n) {
+    if (n == 0) return;
+    if (n == 1) {
+        ansvec.push_back(0);
+        return;
+    }
+    std::vector<Node> treeVec(data.size() + 1);
+    for (int i = 0; i < data.size(); ++i) {
+        if (data[i].first < data[i].second)
+            treeVec[data[i].first].child.push_back(data[i].second);
+        else
+            treeVec[data[i].second].child.push_back(data[i].first);
+        assert(data[i].first != data[i].second && data[i].first <= data.size()
+               && data[i].second <= data.size());
+    }
+    for (int i = static_cast<int>(data.size()), max_deep = 0; i >= 0; --i) {
+        for (auto j : treeVec[i].child)
+            max_deep = max(treeVec[j].deep + 1, max_deep);
+        treeVec[i].deep = max_deep;
+        max_deep = 0;
+    }
+    treeVec[0].maxUpLength = 0;
+    std::vector<int> v1{0};
+    std::vector<int> v2;
+    while (!v1.empty()) {
+        for (auto i : v1) {
+            int max1 = -2, max_ind = -1, max2 = -2;
+            for (auto j : treeVec[i].child)
+                if (treeVec[j].deep > max1) {
+                    max2 = max1;
+                    max1 = treeVec[j].deep;
+                    max_ind = j;
+                } else {
+                    if (treeVec[j].deep > max2) max2 = treeVec[j].deep;
+                }
+            for (auto j : treeVec[i].child) {
+                v2.push_back(j);
+                if (j != max_ind)
+                    treeVec[j].maxUpLength =
+                            max(treeVec[i].maxUpLength + 1, max1 + 2);
+                else
+                    treeVec[j].maxUpLength =
+                            max(treeVec[i].maxUpLength + 1, max2 + 2);
+            }
+            treeVec[i].maxToChildLength = max(max1 + 1, 0);
+        }
+        v1.clear();
+        for (auto i : v2) {
+            int max1 = -1, max_ind = -1, max2 = -1;
+            for (auto j : treeVec[i].child)
+                if (treeVec[j].deep > max1) {
+                    max2 = max1;
+                    max1 = treeVec[j].deep;
+                    max_ind = j;
+                } else {
+                    if (treeVec[j].deep > max2) max2 = treeVec[j].deep;
+                }
+            for (auto j : treeVec[i].child) {
+                v1.push_back(j);
+                if (j != max_ind)
+                    treeVec[j].maxUpLength =
+                                max(treeVec[i].maxUpLength + 1, max1 + 2);
+                else
+                    treeVec[j].maxUpLength =
+                                max(treeVec[i].maxUpLength + 1, max2 + 2);
+                }
+                treeVec[i].maxToChildLength = max(max1 + 1, 0);
+        }
+        v2.clear();
+    }
+    for (auto N : treeVec)
+        ansvec.push_back(max(N.maxToChildLength, N.maxUpLength));
+}
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<std::pair<int, int>> pvec;
+    for (int i = 0, a, b; i < n - 1; ++i) {
+        std::cin >> a >> b;
+        pvec.push_back({a, b});
+    }
+    std::vector<int> ansvec;
+    funk(pvec, ansvec, n);
+    for (auto i : ansvec)
+        std::cout << i << std::endl;
+}

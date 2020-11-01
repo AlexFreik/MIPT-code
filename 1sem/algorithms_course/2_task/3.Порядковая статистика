@@ -1,0 +1,44 @@
+/*3_4. Реализуйте стратегию выбора опорного элемента
+ “случайный элемент”. Функцию Partition реализуйте
+ методом прохода двумя итераторами от конца массива к началу.*/
+#include<iostream>
+#include<vector>
+#include <cstdlib>
+
+template<class T>
+int randomized_partion(std::vector<T> &vec, int left, int right) {
+    if (right == left) return left;
+    int key = rand() % (right - left + 1) + left;
+    std::swap(vec[left], vec[key]);
+    int i = right + 1;
+    for (int j = right; j > left; --j) {
+        if (vec[j] > vec[left]) {
+            --i;
+            std::swap(vec[j], vec[i]);
+        }
+    }
+    std::swap(vec[left], vec[--i]);
+    return i;
+}
+template<class T>
+int randomized_select(std::vector<T> &vec, int left, int right, int k) {
+    if (left == right)
+        return vec[left];
+    int wall = randomized_partion(vec, left, right);
+    int key = wall - left;
+    if (key == k)
+        return vec[wall];
+    if (k < key)
+         return randomized_select(vec, left, wall - 1, k);
+    return randomized_select(vec, wall + 1, right, k - key - 1);
+}
+
+int main() {
+    int n = 0, k = 0;
+    std::cin >> n >> k;     // input
+    std::vector<int> ivec(n);
+    for (auto &i : ivec)
+        std::cin >> i;
+    int value = randomized_select(ivec, 0, ivec.size() - 1, k);  // solve
+    std::cout << value;  // output
+}
