@@ -1,0 +1,135 @@
+/*
+ A. Вторая статистика (4 балла)
+
+ Ограничение времени    1 секунда
+ Ограничение памяти    64Mb
+ Ввод    стандартный ввод или input.txt
+ Вывод    стандартный вывод или output.txt
+ Дано число N и последовательность из N целых чисел.
+ Найти вторую порядковую статистику на заданных диапазонах.
+ Для решения задачи используйте структуру данных Sparse Table.
+ Требуемое время обработки каждого диапазона O(1).
+ Время подготовки структуры данных .
+ Формат ввода
+
+ В первой строке заданы 2 числа: размер последовательности N и количество диапазонов M.
+ Следующие N целых чисел задают последовательность.
+ Далее вводятся M пар чисел - границ диапазонов.
+ Гарантируется, что каждый диапазон содержит как минимум 2 элемента.
+ Формат вывода
+
+ Для каждого из M диапазонов напечатать
+ элемент последовательности - 2ю порядковую статистику.
+ По одному числу в строке.
+ Пример
+
+ Ввод    Вывод
+ 10 3
+ 1 2 3 4 5 6 7 8 9 10
+ 1 2
+ 1 10
+ 2 7
+ 2
+ 2
+ 3
+ */
+
+#include <vector>
+#include <cassert>
+#include <iostream>
+#include  <algorithm>
+#include <limits>
+#include <utility>
+
+struct TableType {
+    int32_t min1;
+    size_t pos1;
+    int32_t min2;
+};
+
+class Sparce_table {
+    /// body is store table, Table Type is for 1st min, it's pos and 2nd min
+    std::vector<std::vector<TableType>> body;
+    TableType unit(const TableType &val1, const TableType &val2) const;
+    size_t size() const { assert(!body.empty()); return body[0].size(); }
+
+  public:
+    explicit Sparce_table(const std::vector<int32_t> &data);
+    int32_t min2(size_t l, size_t r) const;
+};
+
+TableType Sparce_table::unit(const TableType &val1,
+                             const TableType &val2) const {
+    assert(val1.pos1 < size() && val2.pos1 < size());
+    int32_t min1, min2;
+    size_t pos1;
+    if (val1.min1 < val2.min1) {
+        min1 = val1.min1;
+        pos1 = val1.pos1;
+        min2 = std::min({val1.min2, val2.min1, val2.min2});
+    } else if (val1.min1 > val2.min1) {
+        min1 = val2.min1;
+        pos1 = val2.pos1;
+        min2 = std::min({val2.min2, val1.min1, val1.min2});
+    } else {
+        if (val1.pos1 != val2.pos1) {
+            min1 = min2 = val1.min1;
+            pos1 = std::min(val1.pos1, val2.pos1);
+        } else {
+            min1 = val1.min1;
+            pos1 = val1.pos1;
+            min2 = std::min(val1.min2, val2.min2);
+        }
+    }
+    return {min1, pos1, min2};
+}
+
+Sparce_table::Sparce_table(const std::vector<int32_t> &data) {
+    size_t N = data.size();
+    this->body.push_back(std::vector<TableType>());
+    int32_t inf = std::numeric_limits<int32_t>::max();
+    for (size_t j = 0; j < N; ++j) {
+        this->body[0].push_back({data[j], j, inf});
+    }
+    for (size_t i = 1; 1 << i <= N; ++i) {
+        this->body.push_back(std::vector<TableType>());
+        for (size_t j = 0; j < N; ++j) {
+            TableType val1 = this->body[i - 1][j],
+            val2 = this->body[i - 1][std::min(N - 1, j + (1 << (i - 1)))];
+            this->body[i].push_back(unit(val1, val2));
+        }
+    }
+}
+int32_t Sparce_table::min2(size_t l, size_t r) const {
+    assert(l < r && r < size());
+    size_t diff = r - l;
+    size_t i = 0;
+    while (1 << (++i + 1) <= diff);
+    TableType val1(this->body[i][l]), val2(this->body[i][r - (1 << i) + 1]);
+    return unit(val1, val2).min2;
+}
+
+void funk(const std::vector<int32_t> &data,
+          const std::vector<std::pair<size_t, size_t>> &segments,
+          std::vector<int32_t> &ans) {
+    Sparce_table table(data);
+    for (auto &p : segments)
+        ans.push_back(table.min2(p.first - 1, p.second - 1));
+}
+int main() {
+    // input
+    size_t N, m;
+    std::cin >> N >> m;
+    std::vector<int32_t> data(N);
+    for (auto &i : data)
+        std::cin >> i;
+    std::vector<std::pair<size_t, size_t>> segments(m);
+    for (auto &p : segments)
+        std::cin >> p.first >> p.second;
+    // algorithm
+    std::vector<int32_t> ans;
+    funk(data, segments, ans);
+    // output
+    for (auto k2 : ans)
+        std::cout << k2 << std::endl;
+}
