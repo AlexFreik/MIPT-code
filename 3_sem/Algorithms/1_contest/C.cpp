@@ -6,7 +6,6 @@
 //  Created by Alex Freik on 25.11.2020.
 //
 
-
 /*
 C. Шаблон с ?
 Все языки    make2
@@ -61,13 +60,13 @@ struct suffix_tree {
         /// functions
         ~Node();
     };
-    suffix_tree(const std::string &pat, const std::string &text,
-                size_t &get_patt_number);
+    suffix_tree(const std::string &pat, const std::string &text);
     Node* get_suff_link(Node *node);
     Node* get_link(Node *node, char c);
     Node* get_short_suff_link(Node *node);
     void add_pattern(const std::string &patt, size_t id_number);
     /// variables
+    size_t patterns_number;
     Node *root;
     ~suffix_tree() { delete root; }
 };
@@ -89,8 +88,7 @@ void extract_patterns(const std::string &pat,
         }
     }
 }
-suffix_tree::suffix_tree(const std::string &pat, const std::string &text,
-                         size_t &get_patt_number) {
+suffix_tree::suffix_tree(const std::string &pat, const std::string &text) {
     root = new Node;
     std::vector<std::string> patterns;
     std::vector<size_t> patt_places;
@@ -99,7 +97,7 @@ suffix_tree::suffix_tree(const std::string &pat, const std::string &text,
     for (size_t cnt = 0; cnt < patterns.size(); ++cnt) {
         add_pattern(patterns[cnt], patt_places[cnt]);
     }
-    get_patt_number = patterns.size();
+    patterns_number = patterns.size();
 }
 suffix_tree::Node::~Node() {
     for (auto kv : childs) {
@@ -164,8 +162,7 @@ void aho_corasick(const std::string &pat,
                   const std::string &text,
                   std::vector<uint32_t> &ans) {
     // extract patterns without "?" from template ans start aho corasick
-    size_t patterns_number;
-    suffix_tree suff_tree(pat, text, patterns_number);
+    suffix_tree suff_tree(pat, text);
     suffix_tree::Node *curr_state = suff_tree.root, *node_cnt;
     std::vector<uint32_t> patt_cnt(text.size());
     for (size_t cnt = 0; cnt < text.size(); ++cnt) {
@@ -183,7 +180,7 @@ void aho_corasick(const std::string &pat,
     }
     ans.clear();
     for (uint32_t cnt = 0; cnt < patt_cnt.size(); ++cnt) {
-        if (patt_cnt[cnt] == patterns_number &&
+        if (patt_cnt[cnt] == suff_tree.patterns_number &&
             cnt + pat.size() <= text.size()) {
             /// check because "?" can be at the end of template
             ans.push_back(cnt);
@@ -191,7 +188,6 @@ void aho_corasick(const std::string &pat,
     }
 }
 }
-
 
 int main(int argc, const char * argv[]) {
     /// input processing
